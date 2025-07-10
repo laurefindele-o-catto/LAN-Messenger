@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<VBox alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="388.0" prefWidth="563.0" style="-fx-spacing: 20; -fx-padding: 40; -fx-background-color: #e6f7ff;" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="main.java.controller.SignupController">
+   <children>
+      <ImageView fx:id="logoImage" fitHeight="80.0" fitWidth="200.0" pickOnBounds="true" preserveRatio="true" style="-fx-fit-height: 120; -fx-fit-width: 120;">
+         <image>
+            <Image url="@../images/three_cats_on_a_bench_transparent.png" />
+         </image>
+         <VBox.margin>
+            <Insets bottom="20.0" top="20.0" />
+         </VBox.margin>
+      </ImageView>
+      <TextField fx:id="usernameField" maxWidth="-Infinity" prefHeight="37.0" prefWidth="250.0" promptText="Enter your username" style="-fx-padding: 10;">
+         <font>
+            <Font name="Corbel" size="14.0" />
+         </font>
+      </TextField>
+      <PasswordField fx:id="passwordField" maxWidth="-Infinity" prefWidth="250.0" promptText="Enter your password" style="-fx-padding: 10;">
+         <font>
+            <Font name="Corbel" size="14.0" />
+         </font>
+      </PasswordField>
+      <Button fx:id="signupBtn" mnemonicParsing="false" style="-fx-background-color: #e6f7ff; -fx-border-color: #3385ff; -fx-border-radius: 8; -fx-background-radius: 8;" text="Sign up" textFill="#595569">
+         <font>
+            <Font name="Corbel" size="15.0" />
+         </font>
+      </Button>
+      <Label fx:id="errorLabel" textFill="#1e0d32">
+         <font>
+            <Font size="14.0" />
+         </font>
+      </Label>
+      <HBox alignment="BOTTOM_LEFT" prefHeight="43.0" prefWidth="483.0">
+         <children>
+            <Button fx:id="backBtn" mnemonicParsing="false" style="-fx-background-color: #e6f7ff; -fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #3385ff;" text="Back" textFill="#595569">
+               <font>
+                  <Font name="Corbel" size="14.0" />
+               </font>
+            </Button>
+         </children>
+      </HBox>
+   </children>
+</VBox>
