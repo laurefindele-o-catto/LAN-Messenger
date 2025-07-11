@@ -56,7 +56,8 @@ public class ProfilePageController implements UserInterface {
     }
 
     @FXML
-    public void initalize(){
+    public void initialize(){
+
         uploadPhotoBtn.setOnAction(e->handleUploadPhoto());
 
         saveBtn.setOnAction(e->{
