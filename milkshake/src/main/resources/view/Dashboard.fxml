@@ -18,7 +18,7 @@
            <!--  ▸▸  CENTER CONTENT  -->
         <VBox alignment="TOP_CENTER" spacing="25" HBox.hgrow="ALWAYS">
          <ImageView fx:id="photo" fitHeight="105.0" fitWidth="159.0" pickOnBounds="true" preserveRatio="true" />
-         <Label fx:id="username" textFill="#f0f3f5">
+         <Label fx:id="usernameLabel" textFill="#f0f3f5">
             <font>
                <Font name="Comic Sans MS" size="14.0" />
             </font>

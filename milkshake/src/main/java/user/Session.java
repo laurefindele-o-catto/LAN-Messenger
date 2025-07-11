@@ -10,4 +10,13 @@ public class Session {
     public static User getUser(){
         return currentUser;
     }
+
+    // Redundant naming
+    public static void setCurrentUser(User currentUser) {
+        Session.currentUser = currentUser;
+    }
+
+    public static User getCurrentUser() {
+        return currentUser;
+    }
 }

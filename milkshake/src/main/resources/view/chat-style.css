@@ -1,0 +1,20 @@
+.sent {
+    -fx-background-color: #0084ff;
+    -fx-padding: 8 12;
+    -fx-background-radius: 18;
+}
+.sent > Text {
+    -fx-fill: #ffffff;
+    -fx-font-family: "Consolas";
+}
+
+.received {
+    -fx-background-color: #f1f0f0;
+    -fx-padding: 8 12;
+    -fx-background-radius: 18;
+    -fx-border-color: #dddddd;
+}
+.received > Text {
+    -fx-fill: #000000;
+    -fx-font-family: "Consolas";
+}

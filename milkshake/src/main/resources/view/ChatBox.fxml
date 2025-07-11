@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml" fx:controller="main.java.controller.ChatBoxController"
+            stylesheets="@chat-style.css" prefWidth="600" prefHeight="400">
+    <left>
+        <ListView fx:id="friendListView" prefWidth="150" />
+    </left>
+    <center>
+        <VBox spacing="6" BorderPane.alignment="CENTER">
+            <ScrollPane fx:id="chatScrollPane" VBox.vgrow="ALWAYS" fitToWidth="true" prefHeight="350">
+                <content>
+                    <VBox fx:id="chatVBox" spacing="6" />
+                </content>
+            </ScrollPane>
+            <HBox spacing="6">
+                <TextField fx:id="messageField" HBox.hgrow="ALWAYS" />
+                <Button fx:id="sendButton" text="Send" />
+            </HBox>
+        </VBox>
+    </center>
+</BorderPane>
