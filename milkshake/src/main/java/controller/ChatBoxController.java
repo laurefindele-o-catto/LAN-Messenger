@@ -402,24 +402,85 @@ public class ChatBoxController implements Initializable, ClientConnection.Messag
         friendListView.setItems(FXCollections.observableArrayList(loadAllUsernamesExceptSelf()));
     }
 
-    private List<String> loadAllUsernamesExceptSelf() {
-        File usersDir = new File("users");
-        if (!usersDir.exists()) return Collections.emptyList();
-        return Arrays.stream(Objects.requireNonNull(usersDir.listFiles((d, n) -> n.endsWith(".ser"))))
-                .map(f -> f.getName().replace(".ser", ""))
-                .filter(name -> !name.equals(currentUser.getUsername()))
-                .sorted(String::compareToIgnoreCase)
-                .collect(Collectors.toList());
+//    private List<String> loadAllUsernamesExceptSelf() {
+//        File usersDir = new File("users");
+//        if (!usersDir.exists()) return Collections.emptyList();
+//        return Arrays.stream(Objects.requireNonNull(usersDir.listFiles((d, n) -> n.endsWith(".ser"))))
+//                .map(f -> f.getName().replace(".ser", ""))
+//                .filter(name -> !name.equals(currentUser.getUsername()))
+//                .sorted(String::compareToIgnoreCase)
+//                .collect(Collectors.toList());
+//    }
+private List<String> loadAllUsernamesExceptSelf() {
+    List<String> names = new ArrayList<>();                 // final list we’ll return
+
+    File usersDir = new File("users");                      // 1. locate folder
+    if (!usersDir.exists()) {                               // 2. guard-clause if it’s missing
+        return names;                                       //    (empty list)
     }
 
+    File[] files = usersDir.listFiles();                    // 3. grab *all* files
+    if (files == null) {                                    //    rare null if I/O error
+        return names;
+    }
+
+    for (File f : files) {                                  // 4. loop through each entry
+        String fileName = f.getName();                      //    e.g.  alice.ser
+        if (!fileName.endsWith(".ser")) {                   // 4a. skip anything not .ser
+            continue;
+        }
+
+        String username = fileName.substring(               // 4b. strip the extension
+                0, fileName.length() - ".ser".length());
+
+        if (username.equals(currentUser.getUsername())) {   // 4c. skip yourself
+            continue;
+        }
+
+        names.add(username);                                // 4d. keep it
+    }
+
+    // 5. sort alphabetically, case-insensitive
+    names.sort(String::compareToIgnoreCase);
+
+    return names;                                           // 6. done!
+}
+
+
     /* ----------------------------------------------------- UI helpers */
+//    private void loadChat(String friend) {
+//        chatVBox.getChildren().clear(); // clear na korle ager box er chats theke jabe when i switch to another friend
+//        if (friend == null) return;
+//        chatHistory.computeIfAbsent(friend, f -> new ArrayList<>())
+//                .forEach(m -> chatVBox.getChildren().add(makeBubble(m)));
+//        scrollToBottom();
+//    }
     private void loadChat(String friend) {
+        // 1. Clear any bubbles from the previous conversation
         chatVBox.getChildren().clear();
-        if (friend == null) return;
-        chatHistory.computeIfAbsent(friend, f -> new ArrayList<>())
-                .forEach(m -> chatVBox.getChildren().add(makeBubble(m)));
+
+        // 2. If no friend is selected, just stop
+        if (friend == null) {
+            return;
+        }
+
+        // 3. Look up this friend’s history list (or create it the first time)
+        List<Message> history = chatHistory.get(friend);
+        if (history == null) {
+            history = new ArrayList<>();
+            chatHistory.put(friend, history);
+        }
+
+        // 4. Add each saved Message to the VBox as a bubble
+        for (Message m : history) {
+            TextFlow bubble = makeBubble(m);   // convert Message → UI node
+            chatVBox.getChildren().add(bubble);
+        }
+
+        // 5. Scroll to the latest message
         scrollToBottom();
     }
+
 
     private void sendCurrentMessage() {
         String friend = friendListView.getSelectionModel().getSelectedItem();

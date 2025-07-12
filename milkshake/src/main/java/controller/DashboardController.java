@@ -160,7 +160,7 @@ public class DashboardController implements UserInterface {
         // open persistent socket if not yet connected (protect against double‑connect)
         ClientConnection conn = ClientConnection.getInstance();
         if (conn != null && Session.getCurrentUser() != null && !user.getUsername().equals("")) {
-            conn.connect("localhost", 5555, user.getUsername());
+            conn.connect("localhost", 12345, user.getUsername()); // 5555 dewa chilo, changing to 12345
         }
     }
 

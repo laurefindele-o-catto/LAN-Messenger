@@ -1,0 +1,54 @@
+/* Global font */
+.root {
+    -fx-font-family: "Segoe UI", sans-serif;
+}
+
+/* ---- Dashboard Scene ---- */
+.dashboard-root {
+    /* Soft diagonal gradient */
+    -fx-background-color: linear-gradient(to bottom right, #F4F8FF 0%, #E4ECFF 50%, #FFFFFF 100%);
+}
+
+/* ---- ChatBox Scene ---- */
+.chat-root {
+    /* Subtle flat tint to distinguish the chat area */
+    -fx-background-color: #F7F9FF;
+}
+
+.scroll-pane > .viewport {
+    /* Make scroll‑pane viewport transparent so the root gradient shows through */
+    -fx-background-color: transparent;
+}
+
+/* ---- Message bubbles (re‑uses style classes already added by the controller) ---- */
+.sent {
+    -fx-background-color: #DCF8C6;      /* light green, WhatsApp‑style */
+    -fx-background-radius: 16;
+    -fx-padding: 6 12 6 12;
+}
+
+.received {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 16;
+    -fx-padding: 6 12 6 12;
+    -fx-effect: dropshadow(one-pass-box, rgba(0,0,0,0.06), 4, 0, 0, 1);
+}
+
+/* ---- General buttons ---- */
+.button {
+    -fx-background-radius: 10;
+    -fx-background-color: #4D73FF;
+    -fx-text-fill: white;
+    -fx-font-weight: 600;
+}
+.button:hover {
+    -fx-background-color: #335DF1;
+}
+
+/* ---- TextField focus halo ---- */
+.text-field:focused {
+    -fx-border-color: #4D73FF;
+    -fx-border-width: 2;
+    -fx-background-insets: 0;
+    -fx-border-radius: 8;
+}

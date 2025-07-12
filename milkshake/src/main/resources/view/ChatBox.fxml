@@ -3,7 +3,7 @@
 <?import javafx.scene.layout.*?>
 
 <BorderPane xmlns:fx="http://javafx.com/fxml" fx:controller="main.java.controller.ChatBoxController"
-            stylesheets="@chat-style.css" prefWidth="600" prefHeight="400">
+            stylesheets="@styles.css" prefWidth="600" prefHeight="400">
     <left>
         <ListView fx:id="friendListView" prefWidth="150" />
     </left>
@@ -21,3 +21,5 @@
         </VBox>
     </center>
 </BorderPane>
+
+
