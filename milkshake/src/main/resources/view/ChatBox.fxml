@@ -2,24 +2,57 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<BorderPane xmlns:fx="http://javafx.com/fxml" fx:controller="main.java.controller.ChatBoxController"
-            stylesheets="@styles.css" prefWidth="600" prefHeight="400">
-    <left>
-        <ListView fx:id="friendListView" prefWidth="150" />
-    </left>
-    <center>
-        <VBox spacing="6" BorderPane.alignment="CENTER">
-            <ScrollPane fx:id="chatScrollPane" VBox.vgrow="ALWAYS" fitToWidth="true" prefHeight="350">
-                <content>
-                    <VBox fx:id="chatVBox" spacing="6" />
-                </content>
-            </ScrollPane>
-            <HBox spacing="6">
-                <TextField fx:id="messageField" HBox.hgrow="ALWAYS" />
-                <Button fx:id="sendButton" text="Send" />
-            </HBox>
-        </VBox>
-    </center>
-</BorderPane>
+
+<?import javafx.scene.image.ImageView?>
+<AnchorPane prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/23.0.1"
+            xmlns:fx="http://javafx.com/fxml/1" fx:controller="main.java.controller.ChatBoxController">
+
+<!-- Main layout -->
+<HBox spacing="20" AnchorPane.leftAnchor="10" AnchorPane.rightAnchor="10" AnchorPane.topAnchor="10" AnchorPane.bottomAnchor="10">
+
+    <VBox prefWidth="220" spacing="10" style="-fx-background-color: #1a1a1a; -fx-padding: 10;">
+        <Label text="Active Friends" style="-fx-text-fill: white; -fx-font-size: 14px;" />
+        <ScrollPane fx:id="activeUsersScroll" fitToWidth="true" prefHeight="150" style="-fx-background-color: #1a1a1a;">
+            <content>
+                <VBox fx:id="activeUsersBox" spacing="8" />
+            </content>
+        </ScrollPane>
+
+        <Label text="Friends" style="-fx-text-fill: white; -fx-font-size: 14px;" />
+        <ListView fx:id="friendListView" prefHeight="300.0" />
+
+        <Button fx:id="backButton" text="← Back" style="-fx-background-color: gray; -fx-text-fill: white;" />
+    </VBox>
+
+
+
+    <!-- Right: Chat area -->
+    <VBox spacing="15" VBox.vgrow="ALWAYS" style="-fx-background-color: #121212; -fx-padding: 15;">
+
+        <!-- Chat Header -->
+        <HBox spacing="10" alignment="CENTER_LEFT">
+            <ImageView fx:id="chatUserPhoto" fitWidth="40" fitHeight="40" preserveRatio="true" />
+            <Label fx:id="chatUserLabel" style="-fx-text-fill: white; -fx-font-size: 16px;" />
+        </HBox>
+
+        <!-- Chat display -->
+        <ScrollPane fx:id="chatScrollPane" fitToWidth="true" VBox.vgrow="ALWAYS">
+            <content>
+                <VBox fx:id="chatMessagesBox" spacing="10" style="-fx-padding: 10;" />
+            </content>
+        </ScrollPane>
+
+        <!-- Message input -->
+        <HBox spacing="10">
+            <TextField fx:id="messageField" HBox.hgrow="ALWAYS" promptText="Type a message..."
+                       style="-fx-background-color: #1e1e1e; -fx-text-fill: white; -fx-border-color: gray;" />
+            <Button fx:id="sendButton" text="Send" style="-fx-background-color: #3fa9f5; -fx-text-fill: white;" />
+        </HBox>
+    </VBox>
+
+</HBox>
+</AnchorPane>
+
+
 
 

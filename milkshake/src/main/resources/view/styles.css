@@ -52,3 +52,18 @@
     -fx-background-insets: 0;
     -fx-border-radius: 8;
 }
+
+.sent {
+    -fx-background-color: #a0d2f3;
+    -fx-padding: 8;
+    -fx-background-radius: 12;
+    -fx-font-size: 14px;
+}
+
+.received {
+    -fx-background-color: #e4e4e4;
+    -fx-padding: 8;
+    -fx-background-radius: 12;
+    -fx-font-size: 14px;
+}
+

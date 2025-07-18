@@ -341,15 +341,21 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.*;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
+import javafx.scene.text.TextAlignment;
 import javafx.scene.text.TextFlow;
 import main.java.client.ClientConnection;
 import main.java.user.Session;
 import main.java.user.User;
+import main.java.util.sceneChange;
 
-import java.io.File;
+import java.io.*;
 import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -363,10 +369,14 @@ public class ChatBoxController implements Initializable, ClientConnection.Messag
 
     /* ------------------------------------------------------------- FXML */
     @FXML private ListView<String> friendListView;
-    @FXML private ScrollPane       chatScrollPane;
-    @FXML private VBox             chatVBox;
-    @FXML private TextField        messageField;
-    @FXML private Button           sendButton;
+    @FXML private VBox chatMessagesBox;
+    @FXML private ScrollPane chatScrollPane;
+    @FXML private TextField messageField;
+    @FXML private Button sendButton;
+    @FXML private ImageView chatUserPhoto;
+    @FXML private Label chatUserLabel;
+    @FXML private VBox activeUsersBox;
+    @FXML private Button backButton;
 
     /* --------------------------------------------------------- Runtime */
     private User currentUser;
@@ -379,6 +389,9 @@ public class ChatBoxController implements Initializable, ClientConnection.Messag
         connection.registerListener(this);
 
         populateFriendList();
+        loadStoredChats();
+        updateActiveUsers();
+
         // auto‑select first friend for immediate chat
         if (!friendListView.getItems().isEmpty()) {
             friendListView.getSelectionModel().selectFirst();
@@ -395,23 +408,39 @@ public class ChatBoxController implements Initializable, ClientConnection.Messag
 
         // Disable send until a user is selected
         sendButton.disableProperty().bind(friendListView.getSelectionModel().selectedItemProperty().isNull());
+
+        backButton.setOnAction(e -> {
+            shutdown(); // remove listener before scene changes
+            sceneChange.changeScene("Dashboard.fxml", backButton, currentUser);
+        });
     }
 
     /* ---------------------------------------------------- Friend Loader */
     private void populateFriendList() {
-        friendListView.setItems(FXCollections.observableArrayList(loadAllUsernamesExceptSelf()));
+        File dir = new File("users");
+        if (!dir.exists()) return;
+
+        List<String> names = Arrays.stream(Objects.requireNonNull(dir.listFiles((d, n) -> n.endsWith(".ser"))))
+                .map(f -> f.getName().replace(".ser", ""))
+                .filter(name -> !name.equals(currentUser.getUsername()))
+                .sorted(String::compareToIgnoreCase)
+                .collect(Collectors.toList());
+
+        friendListView.setItems(FXCollections.observableArrayList(names));
     }
 
-//    private List<String> loadAllUsernamesExceptSelf() {
-//        File usersDir = new File("users");
-//        if (!usersDir.exists()) return Collections.emptyList();
-//        return Arrays.stream(Objects.requireNonNull(usersDir.listFiles((d, n) -> n.endsWith(".ser"))))
-//                .map(f -> f.getName().replace(".ser", ""))
-//                .filter(name -> !name.equals(currentUser.getUsername()))
-//                .sorted(String::compareToIgnoreCase)
-//                .collect(Collectors.toList());
-//    }
-private List<String> loadAllUsernamesExceptSelf() {
+    private void updateActiveUsers(){
+        List<String> active = new ArrayList<>();
+        activeUsersBox.getChildren().clear();
+        for (String name : active) {
+            Label userLabel = new Label(name);
+            userLabel.setStyle("-fx-text-fill: white; -fx-background-color: #3a3a3a; -fx-padding: 5px; -fx-background-radius: 5px;");
+            userLabel.setMaxWidth(Double.MAX_VALUE);
+            activeUsersBox.getChildren().add(userLabel);
+        }
+    }
+
+    private List<String> loadAllUsernamesExceptSelf() {
     List<String> names = new ArrayList<>();                 // final list we’ll return
 
     File usersDir = new File("users");                      // 1. locate folder
@@ -448,33 +477,66 @@ private List<String> loadAllUsernamesExceptSelf() {
 
 
     /* ----------------------------------------------------- UI helpers */
-//    private void loadChat(String friend) {
-//        chatVBox.getChildren().clear(); // clear na korle ager box er chats theke jabe when i switch to another friend
-//        if (friend == null) return;
-//        chatHistory.computeIfAbsent(friend, f -> new ArrayList<>())
-//                .forEach(m -> chatVBox.getChildren().add(makeBubble(m)));
-//        scrollToBottom();
-//    }
+
+    private void loadStoredChats(){
+        File file = new File("chats/" + currentUser.getUsername() + "_chats.ser");
+        if(!file.exists())
+            return;
+        try(ObjectInputStream in = new ObjectInputStream(new FileInputStream(file))){
+            Object obj = in.readObject();
+            if(obj instanceof Map<?, ?>m){
+                for(Object k: m.keySet()){
+                    if(k instanceof String user && m.get(k) instanceof List<?> l){
+                        List<Message> msgList = new ArrayList<>();
+                        for(Object o:l){
+                            if(o instanceof Message msg){
+                                msgList.add(msg);
+                            }
+                        }
+                        chatHistory.put(user, msgList);
+                    }
+                }
+            }
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void saveChatsToDisk() {
+        File dir = new File("chats");
+        if (!dir.exists()) dir.mkdirs();
+        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("chats/" + currentUser.getUsername() + "_chats.ser"))) {
+            out.writeObject(chatHistory);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void loadChat(String friend) {
         // 1. Clear any bubbles from the previous conversation
-        chatVBox.getChildren().clear();
+        chatMessagesBox.getChildren().clear();
 
         // 2. If no friend is selected, just stop
         if (friend == null) {
             return;
         }
 
+        chatUserLabel.setText(friend);
+
         // 3. Look up this friend’s history list (or create it the first time)
         List<Message> history = chatHistory.get(friend);
+
         if (history == null) {
             history = new ArrayList<>();
             chatHistory.put(friend, history);
         }
 
+        //List<Message> messages = chatHistory.getOrDefault(friend, new ArrayList<>())
+
         // 4. Add each saved Message to the VBox as a bubble
         for (Message m : history) {
-            TextFlow bubble = makeBubble(m);   // convert Message → UI node
-            chatVBox.getChildren().add(bubble);
+            HBox bubble = makeBubble(m);   // convert Message → UI node
+            chatMessagesBox.getChildren().add(bubble);
         }
 
         // 5. Scroll to the latest message
@@ -491,22 +553,34 @@ private List<String> loadAllUsernamesExceptSelf() {
         appendAndRender(m);
         connection.sendPrivateMessage(friend, text);
         messageField.clear();
+        saveChatsToDisk();
     }
 
     private void appendAndRender(Message m) {
         String friend = m.getOtherParty(currentUser.getUsername());
         chatHistory.computeIfAbsent(friend, f -> new ArrayList<>()).add(m);
         if (friend.equals(friendListView.getSelectionModel().getSelectedItem())) {
-            chatVBox.getChildren().add(makeBubble(m));
+            chatMessagesBox.getChildren().add(makeBubble(m));
             scrollToBottom();
         }
     }
 
-    private TextFlow makeBubble(Message m) {
-        TextFlow flow = new TextFlow(new Text(m.text));
+    private HBox makeBubble(Message m) {
+        Text text = new Text(m.text);
+        TextFlow flow = new TextFlow(text);
         flow.getStyleClass().add(m.isSentBy(currentUser.getUsername()) ? "sent" : "received");
-        return flow;
+        flow.setTextAlignment(m.isSentBy(currentUser.getUsername()) ? TextAlignment.RIGHT : TextAlignment.LEFT);
+        flow.setStyle("-fx-background-color: " + (m.isSentBy(currentUser.getUsername()) ? "#DCF8C6" : "#FFFFFF") + "; " +
+                "-fx-padding: 8px; -fx-background-radius: 10px;");
+
+        HBox bubbleBox = new HBox(flow);
+        bubbleBox.setAlignment(m.isSentBy(currentUser.getUsername()) ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+        bubbleBox.setPadding(new Insets(4, 8, 4, 8));
+
+        return bubbleBox;
     }
+
+
 
     private void scrollToBottom() {
         Platform.runLater(() -> {
@@ -516,19 +590,119 @@ private List<String> loadAllUsernamesExceptSelf() {
     }
 
     /* ------------------------- ClientConnection.MessageListener */
-    @Override public void onMessageReceived(String from, String body) {
+    @Override
+    public void onMessageReceived(String from, String body) {
+        System.out.println("UI received message from: " + from + " | " + body);
+
         Platform.runLater(() -> {
-            Message m = new Message(from, currentUser.getUsername(), body);
-            appendAndRender(m);
+            if (body.startsWith("CHAT_HISTORY|")) {
+                String[] parts = body.split("\\|", 4);
+                if (parts.length == 4) {
+                    String friend = parts[1];
+                    String user = parts[2];
+                    String allMsgs = parts[3];
+
+//                    if (!user.equals(currentUser.getUsername())) {
+//                        System.out.println("⚠ Ignored history not meant for me: " + user + " vs " + currentUser.getUsername());
+//                        return;
+//                    }
+
+                    List<Message> history = chatHistory.computeIfAbsent(friend, f -> new ArrayList<>());
+
+                    String[] messages = allMsgs.split(";;;");
+                    for (String entry : messages) {
+                        int sep = entry.indexOf(":");
+                        if (sep > 0) {
+                            String sender = entry.substring(0, sep);
+                            String msg = entry.substring(sep + 1);
+
+                            if (!messageExists(history, sender, msg)) {
+                                history.add(new Message(sender, friend, msg));
+                            }
+                        }
+                    }
+
+                    if (friend.equals(friendListView.getSelectionModel().getSelectedItem())) {
+                        loadChat(friend);
+                    }
+
+                    saveChatsToDisk();
+                }
+            }
+
+            else if (body.startsWith("OFFLINE_MSG|")) {
+                String[] parts = body.split("\\|", 4);
+                if (parts.length == 4) {
+                    String sender = parts[1];
+                    String user = parts[2];
+                    String msgLine = parts[3];
+                    //Offline_msg|1|3|hi three
+
+//                    if (!user.equals(currentUser.getUsername())) {
+//                        System.out.println("⚠ Ignored history not meant for me: " + user + " vs " + currentUser.getUsername());
+//                        return;
+//                    }
+
+                    int sep = msgLine.indexOf(":");
+                    if (sep > 0) {
+                        String msgText = msgLine.substring(sep + 1);
+                        List<Message> history = chatHistory.computeIfAbsent(sender, f -> new ArrayList<>());
+
+                        if (!messageExists(history, sender, msgText)) {
+                            Message m = new Message(sender, user, msgText);
+                            history.add(m);
+
+                            if (sender.equals(friendListView.getSelectionModel().getSelectedItem())) {
+                                chatMessagesBox.getChildren().add(makeBubble(m));
+                                scrollToBottom();
+                            }
+
+                            saveChatsToDisk();
+                        }
+                    }
+                }
+            }
+
+            else {
+                Message m = new Message(from, currentUser.getUsername(), body);
+                List<Message> history = chatHistory.computeIfAbsent(from, f -> new ArrayList<>());
+
+                if (!messageExists(history, from, body)) {
+                    history.add(m);
+
+                    if (from.equals(friendListView.getSelectionModel().getSelectedItem())) {
+                        chatMessagesBox.getChildren().add(makeBubble(m));
+                        scrollToBottom();
+                    }
+
+                    saveChatsToDisk();
+                }
+            }
         });
     }
 
+
+
+
+
+    public void addIncomingMessage(String from, String message) {
+        Label msgLabel = new Label(from + ": " + message);
+        msgLabel.setStyle("-fx-text-fill: white; -fx-background-color: #2b2b2b; -fx-padding: 5;");
+        chatMessagesBox.getChildren().add(msgLabel);
+        chatScrollPane.setVvalue(1.0); // scroll to bottom
+    }
+
+
     /* ------------------------------------------------ Message model */
-    private static class Message {
+    public static class Message implements Serializable {
         final String sender, receiver, text;
-        Message(String s, String r, String t) { sender=s; receiver=r; text=t; }
+        public Message(String s, String r, String t) { sender=s; receiver=r; text=t; }
         boolean isSentBy(String u){ return sender.equals(u); }
         String getOtherParty(String u){ return u.equals(sender)?receiver:sender; }
+    }
+
+    private boolean messageExists(List<Message> list, String sender, String text) {
+        return list.stream().anyMatch(m -> m.sender.equals(sender) && m.text.equals(text));
     }
 
     /* ------------------------------------------------ cleanup */

@@ -205,8 +205,12 @@ package main.java.client;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * One persistent socket per running client. Announces ONLINE as soon as it
@@ -216,6 +220,9 @@ public class ClientConnection {
 
     /* ---------------- singleton ---------------- */
     private static ClientConnection INSTANCE;
+    private final Queue<String> pendingMessages = new LinkedList<>();
+    private final ExecutorService dispatchPool = Executors.newSingleThreadExecutor();
+
     public static ClientConnection getInstance() {
         if (INSTANCE == null) INSTANCE = new ClientConnection();
         return INSTANCE;
@@ -224,7 +231,17 @@ public class ClientConnection {
     /* ---------------- listeners ---------------- */
     public interface MessageListener { void onMessageReceived(String from, String body); }
     private final List<MessageListener> listeners = new CopyOnWriteArrayList<>();
-    public void registerListener(MessageListener l) { listeners.add(l); }
+    public void registerListener(MessageListener l) {
+        System.out.println("registering listener");
+        listeners.add(l);
+        synchronized (pendingMessages) {
+            while (!pendingMessages.isEmpty()) {
+                String line = pendingMessages.poll();
+                System.out.println("Dispatching buffered: " + line);
+                dispatch(line);
+            }
+        }
+    }
     public void removeListener(MessageListener l)   { listeners.remove(l); }
 
     /* ---------------- socket ---------------- */
@@ -256,9 +273,6 @@ public class ClientConnection {
         }
     }
 
-    /* low-level generic send */
-    public void send(String cmd) { out.println(cmd); }
-
     /* high-level helper */
     public void sendPrivateMessage(String to, String body) {
         out.println("PRIVATE|" + username + "|" + to + "|" + body);
@@ -269,13 +283,32 @@ public class ClientConnection {
         try (BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
             String line;
             while ((line = br.readLine()) != null) {
-                String[] p = line.split("\\|", 4);
-                if (p[0].equals("PRIVATE") && p.length == 4) {
-                    String from = p[1];
-                    String msg  = p[3];
-                    listeners.forEach(l -> l.onMessageReceived(from, msg));
+                if (listeners.isEmpty()) {
+                    // Buffer messages until listeners are registered
+                    synchronized (pendingMessages) {
+                        //debugging
+                        System.out.println("Buffering message: " + line);
+                        pendingMessages.offer(line); // 🧠 buffer until listener is ready
+                    }
+
+                    //for debugging
+                    System.out.println("[Received] " + line);
+                }else {
+                    dispatch(line);
                 }
             }
         } catch (IOException ignored) {}
+    }
+
+    private void dispatch(String line) {
+        String[] p = line.split("\\|", 4);
+        if ((p[0].equals("PRIVATE") || p[0].equals("OFFLINE_MSG")) && p.length == 4) {
+            String from = p[1];
+            String msg  = p[3];
+            for (MessageListener l : listeners) {
+                System.out.println("Dispatching to listeners: " + from + " -> " + msg);
+                dispatchPool.submit(() -> l.onMessageReceived(from, msg));
+            }
+        }
     }
 }
