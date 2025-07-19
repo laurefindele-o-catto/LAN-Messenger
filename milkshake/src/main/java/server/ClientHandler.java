@@ -973,6 +973,213 @@
 //}
 
 /////xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-3333333333333333333333333333
+//package main.java.server;
+//
+//import java.io.*;
+//import java.net.Socket;
+//import java.util.*;
+//import java.util.concurrent.ConcurrentHashMap;
+//
+//public class ClientHandler implements Runnable {
+//
+//    private static final Map<String, PrintWriter> onlineWriters = new ConcurrentHashMap<>();
+//    private static final String CHAT_FOLDER = "chats";
+//
+//    private final Socket socket;
+//    private BufferedReader in;
+//    private PrintWriter out;
+//    private String username;
+//
+//    public ClientHandler(Socket socket) {
+//        this.socket = socket;
+//    }
+//
+//    @Override
+//    public void run() {
+//        try {
+//            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+//            out = new PrintWriter(socket.getOutputStream(), true);
+//
+//            String line;
+//            while ((line = in.readLine()) != null) {
+//                String[] parts = line.split("\\|", 4);
+//                switch (parts[0]) {
+//                    case "ONLINE":
+//                        if (parts.length >= 2) {
+//                            username = parts[1];
+//                            onlineWriters.put(username, out);
+//                            out.println("ONLINE_OK");
+//                            sendOfflineMessages(username, out);
+//                            sendChatHistory(username, out);
+//                        }
+//                        break;
+//
+//                    case "SIGNUP":
+//                        if (parts.length >= 3) {
+//                            String newUser = parts[1];
+//                            String pass = parts[2];
+//                            if (userExists(newUser)) {
+//                                out.println("ERROR|Username already taken");
+//                            } else {
+//                                saveCredentials(newUser, pass);
+//                                out.println("SUCCESS");
+//                            }
+//                        }
+//                        break;
+//
+//                    case "LOGIN":
+//                        if (parts.length >= 3) {
+//                            String u = parts[1];
+//                            String p = parts[2];
+//                            if (verifyCredentials(u, p)) {
+//                                username = u;
+//                                onlineWriters.put(username, out);
+//                                out.println("SUCCESS");
+//                                sendOfflineMessages(username, out);
+//                                sendChatHistory(username, out);
+//                            } else {
+//                                out.println("ERROR|Invalid credentials");
+//                            }
+//                        }
+//                        break;
+//
+//                    case "PRIVATE":
+//                        if (parts.length >= 4) {
+//                            String from = parts[1];
+//                            String to = parts[2];
+//                            String body = parts[3];
+//                            if (from.equals(to)) break;
+//
+//                            updateChatHistory(from, to, body);
+//                            PrintWriter target = onlineWriters.get(to);
+//                            String fullMessage = "PRIVATE|" + from + "|" + to + "|" + body;
+//                            if (target != null) {
+//                                target.println(fullMessage);
+//                            } else {
+//                                saveOfflineMessage(to, from, body);
+//                            }
+//                        }
+//                        break;
+//                }
+//            }
+//        } catch (IOException ignored) {
+//        } finally {
+//            if (username != null) onlineWriters.remove(username);
+//            try {
+//                socket.close();
+//            } catch (IOException ignored) {
+//            }
+//        }
+//    }
+//
+//    private static final File CRED_FILE = new File("users.txt");
+//
+//    private boolean userExists(String user) throws IOException {
+//        if (!CRED_FILE.exists()) return false;
+//        try (BufferedReader br = new BufferedReader(new FileReader(CRED_FILE))) {
+//            String l;
+//            while ((l = br.readLine()) != null)
+//                if (l.split("\\|", 2)[0].equals(user)) return true;
+//            return false;
+//        }
+//    }
+//
+//    private void saveCredentials(String user, String pass) throws IOException {
+//        if (!CRED_FILE.exists()) CRED_FILE.createNewFile();
+//        try (PrintWriter pw = new PrintWriter(new FileWriter(CRED_FILE, true))) {
+//            pw.println(user + "|" + pass);
+//        }
+//    }
+//
+//    private boolean verifyCredentials(String user, String pass) throws IOException {
+//        if (!CRED_FILE.exists()) return false;
+//        try (BufferedReader br = new BufferedReader(new FileReader(CRED_FILE))) {
+//            String l;
+//            while ((l = br.readLine()) != null) {
+//                String[] p = l.split("\\|", 2);
+//                if (p.length == 2 && p[0].equals(user) && p[1].equals(pass)) return true;
+//            }
+//            return false;
+//        }
+//    }
+//
+//    private void updateChatHistory(String from, String to, String message) {
+//        String line = from + ":" + message;
+//        appendToChatFile(to, from, line);   // For recipient: chats/to/from.txt
+//        appendToChatFile(from, to, line);   // For sender: chats/from/to.txt
+//    }
+//
+//    private void appendToChatFile(String user, String friend, String line) {
+//        File dir = new File(CHAT_FOLDER + "/" + user);
+//        if (!dir.exists()) dir.mkdirs();
+//        File chatFile = new File(dir, friend + ".txt");
+//        try (PrintWriter writer = new PrintWriter(new FileWriter(chatFile, true))) {
+//            writer.println(line);
+//        } catch (IOException e) {
+//            System.err.println("Failed to append to chat file for " + user + ": " + e.getMessage());
+//        }
+//    }
+//
+//    private void saveOfflineMessage(String to, String from, String message) {
+//        File dir = new File(CHAT_FOLDER + "/" + to);
+//        if (!dir.exists()) dir.mkdirs();
+//        File offlineFile = new File(dir, from + ".offline.txt");
+//        try (PrintWriter writer = new PrintWriter(new FileWriter(offlineFile, true))) {
+//            writer.println(from + ":" + message);
+//        } catch (IOException e) {
+//            System.err.println("Failed to save offline message for " + to + ": " + e.getMessage());
+//        }
+//    }
+//
+//    private void sendOfflineMessages(String username, PrintWriter writer) {
+//        File folder = new File(CHAT_FOLDER + "/" + username);
+//        if (!folder.exists()) return;
+//        File[] files = folder.listFiles((d, name) -> name.endsWith(".offline.txt"));
+//        if (files == null) return;
+//        for (File file : files) {
+//            String friend = file.getName().replace(".offline.txt", "");
+//            try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+//                String line;
+//                while ((line = br.readLine()) != null) {
+//                    String msg = "OFFLINE_MSG|" + friend + "|" + username + "|" + line;
+//                    writer.println(msg);
+//                }
+//                file.delete();
+//            } catch (IOException e) {
+//                System.err.println("Error sending offline messages: " + e.getMessage());
+//            }
+//        }
+//    }
+//
+//    private void sendChatHistory(String username, PrintWriter writer) {
+//        File dir = new File(CHAT_FOLDER + "/" + username);
+//        if (!dir.exists()) return;
+//        File[] files = dir.listFiles((d, name) -> name.endsWith(".txt") && !name.endsWith(".offline.txt"));
+//        if (files == null) return;
+//        for (File file : files) {
+//            String friend = file.getName().replace(".txt", "");
+//            if (friend.equals(username)) {
+//                file.delete();
+//                continue;
+//            }
+//            List<String> history = new ArrayList<>();
+//            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+//                String line;
+//                while ((line = reader.readLine()) != null) {
+//                    history.add(line);
+//                }
+//            } catch (IOException e) {
+//                System.err.println("Failed to read chat history for " + username + " and " + friend + ": " + e.getMessage());
+//            }
+//            if (!history.isEmpty()) {
+//                String payload = String.join(";;;", history);
+//                String lineToSend = "CHAT_HISTORY|" + friend + "|" + username + "|" + payload;
+//                writer.println(lineToSend);
+//            }
+//        }
+//    }
+//}
+
 package main.java.server;
 
 import java.io.*;
@@ -1048,7 +1255,9 @@ public class ClientHandler implements Runnable {
                             String from = parts[1];
                             String to = parts[2];
                             String body = parts[3];
-                            if (from.equals(to)) break;
+                            if (from.equals(to)) {
+                                break;
+                            }
 
                             updateChatHistory(from, to, body);
                             PrintWriter target = onlineWriters.get(to);
@@ -1064,7 +1273,9 @@ public class ClientHandler implements Runnable {
             }
         } catch (IOException ignored) {
         } finally {
-            if (username != null) onlineWriters.remove(username);
+            if (username != null) {
+                onlineWriters.remove(username);
+            }
             try {
                 socket.close();
             } catch (IOException ignored) {
@@ -1075,29 +1286,41 @@ public class ClientHandler implements Runnable {
     private static final File CRED_FILE = new File("users.txt");
 
     private boolean userExists(String user) throws IOException {
-        if (!CRED_FILE.exists()) return false;
+        if (!CRED_FILE.exists()) {
+            return false;
+        }
         try (BufferedReader br = new BufferedReader(new FileReader(CRED_FILE))) {
             String l;
-            while ((l = br.readLine()) != null)
-                if (l.split("\\|", 2)[0].equals(user)) return true;
+            while ((l = br.readLine()) != null) {
+                String[] parts = l.split("\\|", 2);
+                if (parts[0].equals(user)) {
+                    return true;
+                }
+            }
             return false;
         }
     }
 
     private void saveCredentials(String user, String pass) throws IOException {
-        if (!CRED_FILE.exists()) CRED_FILE.createNewFile();
+        if (!CRED_FILE.exists()) {
+            CRED_FILE.createNewFile();
+        }
         try (PrintWriter pw = new PrintWriter(new FileWriter(CRED_FILE, true))) {
             pw.println(user + "|" + pass);
         }
     }
 
     private boolean verifyCredentials(String user, String pass) throws IOException {
-        if (!CRED_FILE.exists()) return false;
+        if (!CRED_FILE.exists()) {
+            return false;
+        }
         try (BufferedReader br = new BufferedReader(new FileReader(CRED_FILE))) {
             String l;
             while ((l = br.readLine()) != null) {
                 String[] p = l.split("\\|", 2);
-                if (p.length == 2 && p[0].equals(user) && p[1].equals(pass)) return true;
+                if (p.length == 2 && p[0].equals(user) && p[1].equals(pass)) {
+                    return true;
+                }
             }
             return false;
         }
@@ -1105,13 +1328,15 @@ public class ClientHandler implements Runnable {
 
     private void updateChatHistory(String from, String to, String message) {
         String line = from + ":" + message;
-        appendToChatFile(to, from, line);   // For recipient: chats/to/from.txt
-        appendToChatFile(from, to, line);   // For sender: chats/from/to.txt
+        appendToChatFile(to, from, line);
+        appendToChatFile(from, to, line);
     }
 
     private void appendToChatFile(String user, String friend, String line) {
         File dir = new File(CHAT_FOLDER + "/" + user);
-        if (!dir.exists()) dir.mkdirs();
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
         File chatFile = new File(dir, friend + ".txt");
         try (PrintWriter writer = new PrintWriter(new FileWriter(chatFile, true))) {
             writer.println(line);
@@ -1122,7 +1347,9 @@ public class ClientHandler implements Runnable {
 
     private void saveOfflineMessage(String to, String from, String message) {
         File dir = new File(CHAT_FOLDER + "/" + to);
-        if (!dir.exists()) dir.mkdirs();
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
         File offlineFile = new File(dir, from + ".offline.txt");
         try (PrintWriter writer = new PrintWriter(new FileWriter(offlineFile, true))) {
             writer.println(from + ":" + message);
@@ -1133,9 +1360,18 @@ public class ClientHandler implements Runnable {
 
     private void sendOfflineMessages(String username, PrintWriter writer) {
         File folder = new File(CHAT_FOLDER + "/" + username);
-        if (!folder.exists()) return;
-        File[] files = folder.listFiles((d, name) -> name.endsWith(".offline.txt"));
-        if (files == null) return;
+        if (!folder.exists()) {
+            return;
+        }
+        File[] files = folder.listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                return name.endsWith(".offline.txt");
+            }
+        });
+        if (files == null) {
+            return;
+        }
         for (File file : files) {
             String friend = file.getName().replace(".offline.txt", "");
             try (BufferedReader br = new BufferedReader(new FileReader(file))) {
@@ -1153,9 +1389,18 @@ public class ClientHandler implements Runnable {
 
     private void sendChatHistory(String username, PrintWriter writer) {
         File dir = new File(CHAT_FOLDER + "/" + username);
-        if (!dir.exists()) return;
-        File[] files = dir.listFiles((d, name) -> name.endsWith(".txt") && !name.endsWith(".offline.txt"));
-        if (files == null) return;
+        if (!dir.exists()) {
+            return;
+        }
+        File[] files = dir.listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File d, String name) {
+                return name.endsWith(".txt") && !name.endsWith(".offline.txt");
+            }
+        });
+        if (files == null) {
+            return;
+        }
         for (File file : files) {
             String friend = file.getName().replace(".txt", "");
             if (friend.equals(username)) {
