@@ -1372,7 +1372,7 @@ public class ClientHandler implements Runnable {
         if (files == null) {
             return;
         }
-        for (File file : files) {
+        for  (File file : files) {
             String friend = file.getName().replace(".offline.txt", "");
             try (BufferedReader br = new BufferedReader(new FileReader(file))) {
                 String line;
