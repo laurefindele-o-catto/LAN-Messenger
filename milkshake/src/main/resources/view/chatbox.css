@@ -1,21 +1,178 @@
-.sent {
-    -fx-background-color: #DCF8C6;
-    -fx-padding: 8px;
-    -fx-background-radius: 10px;
-    -fx-alignment: center-right;
-}
+/* -------------------------------------------------------------------------
+   chatbox.css – Dark sleek theme (v2.5)
+   -------------------------------------------------------------------------
+   NEW: Subtle translucent background image behind the chat area.
+   How it works
+   • The image file (e.g. /resources/images/chat_bg.jpg) is layered beneath a
+     semi‑transparent black gradient so bubbles & text stay readable.
+   • It only shows in the chat pane, not the friend list.
+   ------------------------------------------------------------------------- */
 
-.received {
-    -fx-background-color: #FFFFFF;
-    -fx-padding: 8px;
-    -fx-background-radius: 10px;
-    -fx-alignment: center-left;
-}
-
-.sent .text, .received .text {
+/********************************  GLOBAL  ********************************/
+.root {
+    -fx-font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
     -fx-font-size: 14px;
+    -fx-background-color: #2b2b2b; /* fallback */
+    -fx-text-fill: #dddddd;
 }
 
-.text {
-    -fx-wrapping-width: 300px;
+*:focused {
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
 }
+
+/****************************  LAYOUT BACKGROUND  ***************************/
+.sidebar {
+    -fx-background-color: #1c1c1c; /* sidebar charcoal */
+}
+
+/* -------- Chat pane with translucent image -------- */
+/* Apply to the ScrollPane's viewport so it fills the whole chat area */
+#chatScrollPane > .viewport {
+    /* Two layers: dark overlay + photo */
+    -fx-background-image: linear-gradient(rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.55) 100%),
+                          url("/images/chat_bg.jpg");
+    -fx-background-repeat: no-repeat;
+    -fx-background-size: cover; /* stretch to fill */
+    -fx-background-position: center center;
+}
+
+/* Let inner VBox be transparent so image shows */
+#chatMessagesBox {
+    -fx-background-color: transparent;
+}
+
+#chatScrollPane { -fx-background-color: transparent; }
+#chatScrollPane > .viewport { -fx-background-color: transparent; }
+
+/******************************  FRIEND LIST  ******************************/
+#friendListView,
+#friendListView .list-view,
+#friendListView .virtual-flow,
+#friendListView .clipped-container,
+#friendListView .viewport {
+    -fx-background-color: #1c1c1c;
+    -fx-control-inner-background: #1c1c1c;
+}
+
+/*****************************  FRIEND CELLS  ******************************/
+.list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #dddddd;
+    -fx-font-size: 13px;
+    -fx-padding: 8 12 8 12;
+    -fx-background-radius: 8;
+    -fx-background-insets: 0,1;
+}
+
+.list-cell:hover {
+    -fx-background-color: #353535;
+    -fx-effect: dropshadow(one-pass-box, rgba(0,0,0,0.4), 3, 0, 0, 1);
+}
+
+.list-cell:pressed {
+    -fx-background-color: #2e2e2e;
+    -fx-effect: innershadow(one-pass-box, rgba(0,0,0,0.75), 5, 0.45, 0, 1);
+    -fx-translate-y: 2;
+}
+
+.list-cell:filled:selected,
+.list-cell:filled:selected:hover {
+    -fx-background-color: linear-gradient(to bottom, #1f9ba9 0%, #157a85 100%);
+    -fx-text-fill: white;
+    -fx-border-color: #10d0e1;
+    -fx-border-width: 0 0 0 4;
+    -fx-border-radius: 0 8 8 0;
+    -fx-effect: dropshadow(one-pass-box, rgba(0,0,0,0.6), 4, 0, 0, 2);
+}
+
+/********************************* BUTTONS **********************************/
+.button {
+    -fx-background-radius: 8;
+    -fx-padding: 8 18 8 18;
+    -fx-font-weight: bold;
+    -fx-background-insets: 0,1;
+    -fx-background-radius: 8,7;
+    -fx-background-color: linear-gradient(to bottom, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 100%),
+                          linear-gradient(to bottom, #52575b 0%, #434648 100%);
+    -fx-effect: dropshadow(one-pass-box, rgba(0,0,0,0.4), 4, 0, 0, 2);
+    -fx-text-fill: #dddddd;
+    -fx-cursor: hand;
+}
+
+.button:hover {
+    -fx-background-color: linear-gradient(to bottom, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 100%),
+                          linear-gradient(to bottom, #5d6266 0%, #4a4e50 100%);
+}
+
+.button:pressed {
+    -fx-background-color: linear-gradient(to bottom, #323436 0%, #3b3d3f 100%);
+    -fx-effect: innershadow(one-pass-box, rgba(0,0,0,0.7), 6, 0.45, 0, 1);
+    -fx-translate-y: 2;
+}
+
+#sendButton {
+    -fx-background-color: linear-gradient(to bottom, #1582bf 0%, #0e639c 100%);
+    -fx-text-fill: white;
+}
+#sendButton:hover  { -fx-background-color: linear-gradient(to bottom, #1b96dc 0%, #1582bf 100%); }
+#sendButton:pressed{ -fx-background-color: linear-gradient(to bottom, #0e639c 0%, #0a5277 100%); }
+
+#backButton {
+    -fx-background-color: transparent;
+    -fx-border-color: #666666;
+    -fx-border-radius: 8;
+}
+#backButton:hover  { -fx-border-color: #888888; }
+#backButton:pressed{
+    -fx-background-color: rgba(255,255,255,0.07);
+    -fx-border-color: #888888;
+    -fx-effect: innershadow(one-pass-box, rgba(0,0,0,0.6), 5, 0.4, 0, 1);
+    -fx-translate-y: 2;
+}
+
+/*******************************  TEXT FIELD  *******************************/
+#messageField {
+    -fx-background-color: #3c3f41;
+    -fx-background-radius: 8;
+    -fx-text-fill: #dddddd;
+    -fx-prompt-text-fill: #999999;
+    -fx-padding: 8 12 8 12;
+}
+#messageField:focused { -fx-background-color: #46494c; }
+
+/*****************************  CHAT BUBBLES  ******************************/
+.chat-message-in, .chat-message-out {
+    -fx-padding: 10 14 10 14;
+    -fx-background-radius: 16 16 16 4;
+    -fx-effect: dropshadow(one-pass-box, rgba(0,0,0,0.3), 4, 0.2, 0, 2);
+    -fx-max-width: 75%;
+    -fx-font-size: 13px;
+}
+
+.chat-message-in {
+    -fx-alignment: CENTER_LEFT;
+    -fx-background-color: #3d4043;
+    -fx-text-fill: #dddddd;
+}
+
+.chat-message-out {
+    -fx-alignment: CENTER_RIGHT;
+    -fx-background-radius: 16 16 4 16;
+    -fx-background-color: #0e639c;
+    -fx-text-fill: white;
+}
+
+.chat-message-in:hover, .chat-message-out:hover {
+    -fx-effect: dropshadow(one-pass-box, rgba(0,0,0,0.45), 5, 0.25, 0, 3);
+}
+
+/*******************************  SCROLL BARS  ******************************/
+.scroll-bar:vertical { -fx-pref-width: 8; }
+.scroll-bar:horizontal { -fx-pref-height: 8; }
+.scroll-bar > .thumb { -fx-background-color: #555555; -fx-background-radius: 4; }
+.scroll-bar > .track { -fx-background-color: transparent; }
+
+/********************************  UTILITIES  ******************************/
+.fadeIn { -fx-opacity: 0; }
+.fadeInAnimated { -fx-opacity: 1; -fx-transition: all 0.3s ease; }
