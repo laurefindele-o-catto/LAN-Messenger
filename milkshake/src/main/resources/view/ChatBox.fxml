@@ -55,4 +55,31 @@
 
 
 
+<!--<?import javafx.scene.control.*?>-->
+<!--<?import javafx.scene.layout.*?>-->
+<!--<?import javafx.scene.text.*?>-->
+
+<!--<?import java.net.URL?>-->
+<!--<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="main.java.controller.ChatBoxController" prefHeight="400.0" prefWidth="600.0" spacing="10">-->
+<!--    <stylesheets>-->
+<!--        <URL value="@chatbox.css"/>-->
+<!--    </stylesheets>-->
+<!--    <HBox spacing="10" alignment="CENTER">-->
+<!--        <ListView fx:id="friendListView" prefWidth="150.0" prefHeight="300.0"/>-->
+<!--        <ScrollPane fx:id="chatScrollPane" fitToWidth="true" prefHeight="300.0" prefWidth="400.0">-->
+<!--            <content>-->
+<!--                <VBox fx:id="chatMessagesBox" spacing="5"/>-->
+<!--            </content>-->
+<!--        </ScrollPane>-->
+<!--    </HBox>-->
+<!--    <HBox spacing="10" alignment="CENTER">-->
+<!--        <TextField fx:id="messageField" prefWidth="450.0" promptText="Type your message..."/>-->
+<!--        <Button fx:id="sendButton" text="Send"/>-->
+<!--    </HBox>-->
+<!--    <HBox alignment="CENTER">-->
+<!--        <Button fx:id="backButton" text="Back"/>-->
+<!--    </HBox>-->
+<!--</VBox>-->
+
+
 

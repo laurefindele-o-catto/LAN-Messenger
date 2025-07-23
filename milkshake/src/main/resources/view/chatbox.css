@@ -1,0 +1,21 @@
+.sent {
+    -fx-background-color: #DCF8C6;
+    -fx-padding: 8px;
+    -fx-background-radius: 10px;
+    -fx-alignment: center-right;
+}
+
+.received {
+    -fx-background-color: #FFFFFF;
+    -fx-padding: 8px;
+    -fx-background-radius: 10px;
+    -fx-alignment: center-left;
+}
+
+.sent .text, .received .text {
+    -fx-font-size: 14px;
+}
+
+.text {
+    -fx-wrapping-width: 300px;
+}
