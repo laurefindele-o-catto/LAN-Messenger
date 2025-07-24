@@ -1,9 +1,14 @@
 package main.java.user;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.concurrent.ConcurrentHashMap;
 
 // model/User.java
 
@@ -22,9 +27,9 @@ public class User implements Serializable {
     private String avatarBase64;
 
     // Friendship and request tracking by username
-    private Set<String> friends = new HashSet<>();
-    private Set<String> friendRequestsSent = new HashSet<>();
-    private Set<String> friendRequestsReceived = new HashSet<>();
+    private Set<String> friends = Collections.synchronizedSet(new HashSet<>());
+    private Set<String> friendRequestsSent = Collections.synchronizedSet(new HashSet<>());
+    private Set<String> friendRequestsReceived = Collections.synchronizedSet(new HashSet<>());
 
     public User(String username) {
         this.username = username;
@@ -61,12 +66,49 @@ public class User implements Serializable {
     /**
      * Sends a friend request to another user.
      */
+
+    public static User loadUser(String username) {
+        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream("users/" + username + "/data.ser"))) {
+            User user = (User) in.readObject();
+            user.ensureSetFields(); // 🔥 This is critical
+            return user;
+        } catch (IOException | ClassNotFoundException e) {
+            return null;
+        }
+    }
+
+    private void ensureSetFields() {
+        if (friends == null) friends = Collections.synchronizedSet(new HashSet<>());
+        if (friendRequestsSent == null) friendRequestsSent = Collections.synchronizedSet(new HashSet<>());
+        if (friendRequestsReceived == null) friendRequestsReceived = Collections.synchronizedSet(new HashSet<>());
+    }
+
+
+
+//    public void sendFriendRequest(User other) {
+//        if (other == null || other.username.equals(this.username)) return;
+//        if (friends.contains(other.username) || friendRequestsSent.contains(other.username)) return;
+//        friendRequestsSent.add(other.username);
+//        other.friendRequestsReceived.add(this.username);
+//        System.out.println("sending friend request to " + other.getUsername());
+//    }
+
     public void sendFriendRequest(User other) {
+        System.out.println("== In sendFriendRequest ==");
+        System.out.println("Already friends? " + friends.contains(other.username));
+        System.out.println("Already sent? " + friendRequestsSent.contains(other.username));
+
         if (other == null || other.username.equals(this.username)) return;
-        if (friends.contains(other.username) || friendRequestsSent.contains(other.username)) return;
+        if (friends.contains(other.username) || friendRequestsSent.contains(other.username)) {
+            System.out.println("Request skipped due to already sent or already friends.");
+            return;
+        }
+
         friendRequestsSent.add(other.username);
         other.friendRequestsReceived.add(this.username);
+        System.out.println("sending friend request to " + other.getUsername());
     }
+
 
     /**
      * Accepts a pending friend request from another user.
@@ -77,6 +119,8 @@ public class User implements Serializable {
         other.friendRequestsSent.remove(this.username);
         friends.add(other.username);
         other.friends.add(this.username);
+
+        System.out.println("accepting friend request from " + other.getUsername());
     }
 
     /**
@@ -86,6 +130,8 @@ public class User implements Serializable {
         if (other == null || !friendRequestsReceived.contains(other.username)) return;
         friendRequestsReceived.remove(other.username);
         other.friendRequestsSent.remove(this.username);
+
+        System.out.println("declining friend request from " + other.getUsername());
     }
 
     /**
@@ -98,9 +144,26 @@ public class User implements Serializable {
     }
 
     // Accessors for friend lists (defensive copies)
-    public Set<String> getFriends() { return new HashSet<>(friends); }
-    public Set<String> getFriendRequestsSent() { return new HashSet<>(friendRequestsSent); }
-    public Set<String> getFriendRequestsReceived() { return new HashSet<>(friendRequestsReceived); }
+    //public Set<String> getFriends() { return new HashSet<>(friends); }
+    public Set<String> getFriends() {
+        if (friends == null) {
+            friends = Collections.synchronizedSet(new HashSet<>());
+        }
+        return friends;
+    }
+
+    public Set<String> getFriendRequestsSent() {
+        if (friendRequestsSent == null) {
+            friendRequestsSent = Collections.synchronizedSet(new HashSet<>());
+        }
+        return new HashSet<>(friendRequestsSent);
+    }
+    public Set<String> getFriendRequestsReceived() {
+        if (friendRequestsReceived == null) {
+            friendRequestsReceived = Collections.synchronizedSet(new HashSet<>());
+        }
+        return new HashSet<>(friendRequestsReceived);
+    }
 
     @Override
     public String toString() {

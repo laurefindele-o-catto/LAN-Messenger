@@ -6,6 +6,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import main.java.client.ClientConnection;
 import main.java.user.Database;
 import main.java.user.Session;
 import main.java.user.User;
@@ -14,6 +15,10 @@ import main.java.util.sceneChange;
 
 
 import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.nio.file.Files;
 import java.time.LocalDate;
 
 public class ProfilePageController implements UserInterface {
@@ -57,6 +62,7 @@ public class ProfilePageController implements UserInterface {
 
     @FXML
     public void initialize(){
+        ClientConnection.getInstance().setCurrentController(this);
 
         uploadPhotoBtn.setOnAction(e->handleUploadPhoto());
 
@@ -77,10 +83,16 @@ public class ProfilePageController implements UserInterface {
         );
 
         File file = fileChooser.showOpenDialog(new Stage());
+
         if(file != null){
             photoFile = file;
             newPhoto.setImage(new Image(file.toURI().toString()));
             profilePhoto.setImage(new Image(file.toURI().toString()));
+
+            ClientConnection.getInstance().uploadProfileImage(file);
+
+//            newPhoto.setImage(new Image(file.toURI().toString()));
+//            profilePhoto.setImage(new Image(file.toURI().toString()));
         }
     }
 
@@ -91,7 +103,8 @@ public class ProfilePageController implements UserInterface {
         user.setBio(bio.getText());
 
         if (photoFile != null) {
-            user.setPhotoPath(photoFile.getAbsolutePath());
+            //user.setPhotoPath(photoFile.getAbsolutePath());
+            user.setPhotoPath("users/" + user.getUsername() + "/profile.jpg");
         }
 
         LocalDate date = birthday.getValue();

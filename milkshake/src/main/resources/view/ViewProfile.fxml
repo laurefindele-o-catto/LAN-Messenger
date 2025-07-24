@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<AnchorPane xmlns="http://javafx.com/javafx/23.0.1" prefHeight="400.0" prefWidth="450.0" style="-fx-background-color: black;"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="main.java.controller.ViewProfileController">
+
+    <VBox alignment="CENTER" spacing="15.0" AnchorPane.topAnchor="20.0" AnchorPane.leftAnchor="30.0" AnchorPane.rightAnchor="30.0">
+        <ImageView fx:id="profilePic" fitHeight="120.0" fitWidth="120.0" preserveRatio="true" />
+        <Label fx:id="usernameLabel" textFill="white">
+            <font>
+                <Font name="Calibri" size="18"/>
+            </font>
+        </Label>
+
+        <Label fx:id="bioLabel" textFill="#cfcfcf" wrapText="true" />
+
+        <HBox spacing="20">
+            <Button fx:id="sendFriendRequestBtn"
+                    text="Send Friend Request"
+                    style="-fx-background-color: #1a73e8; -fx-text-fill: white; -fx-font-size: 14; -fx-background-radius: 8;" />
+            <Button fx:id="backBtn"
+                    text="Back"
+                    style="-fx-background-color: transparent; -fx-text-fill: white; -fx-border-color: white; -fx-border-radius: 8;" />
+        </HBox>
+    </VBox>
+</AnchorPane>
