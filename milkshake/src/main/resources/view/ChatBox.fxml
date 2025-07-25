@@ -77,11 +77,18 @@
     </stylesheets>
 
     <!-- ========================= LEFT : Friend list sidebar ========================= -->
+    <!-- In the left VBox -->
     <left>
         <VBox spacing="10" prefWidth="220"
               style="-fx-background-color:#1e1e1e;-fx-padding:12;">
-            <Label text="Friends"
-                   style="-fx-text-fill:white;-fx-font-size:16; -fx-font-weight:bold;" />
+            <!-- Label and create group button row -->
+            <HBox spacing="8" alignment="CENTER_LEFT">
+                <Label text="Friends"
+                       style="-fx-text-fill:white;-fx-font-size:16; -fx-font-weight:bold;" />
+                <!-- Button to open the group creation dialog -->
+                <Button fx:id="createGroupButton" text="+" maxHeight="Infinity" maxWidth="Infinity"
+                        style="-fx-background-color:transparent; -fx-text-fill:#ddd; -fx-font-size:16;" />
+            </HBox>
 
             <!-- Friend list (existing fx:id) -->
             <ListView fx:id="friendListView" VBox.vgrow="ALWAYS" />
@@ -91,6 +98,7 @@
                     style="-fx-background-color:transparent; -fx-border-color:#888; -fx-text-fill:#ddd;" />
         </VBox>
     </left>
+
 
     <!-- ========================= CENTRE : Chat area ========================= -->
     <center>

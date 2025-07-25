@@ -1,3 +1,5 @@
+
+
 package main.java.server;
 
 import main.java.user.Database;
@@ -5,14 +7,26 @@ import main.java.user.User;
 
 import java.io.*;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.Collections;
 
+/**
+ * Handles communication with a single client.  Uses a unified protocol for
+ * private and group messages.  Group messages are expected in the format:
+ * GROUP_MSG|groupName|sender|timestamp|message and are broadcast to all
+ * members (except the sender) in that same order.
+ */
 public class ClientHandler implements Runnable {
 
     private static final Map<String, PrintWriter> onlineWriters = new ConcurrentHashMap<>();
+    private static final Map<String, Set<String>> groupMembers = new ConcurrentHashMap<>();
     private static final String CHAT_FOLDER = "chats";
 
     private final Socket socket;
@@ -27,8 +41,8 @@ public class ClientHandler implements Runnable {
     @Override
     public void run() {
         try {
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out = new PrintWriter(socket.getOutputStream(), true);
+            in = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
+            out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true);
 
             String line;
             while ((line = in.readLine()) != null) {
@@ -90,7 +104,6 @@ public class ClientHandler implements Runnable {
                             String timestampStr = parts[3];
                             String body = parts[4];
                             if (from.equals(to)) break;
-
                             updateChatHistory(from, to, timestampStr, body);
                             PrintWriter target = onlineWriters.get(to);
                             String fullMessage = "PRIVATE|" + from + "|" + to + "|" + timestampStr + "|" + body;
@@ -116,24 +129,91 @@ public class ClientHandler implements Runnable {
                         }
                         break;
 
-                    case "UPLOAD_PROFILE_PHOTO":
-                        String username = parts[1];
-                        String filename = parts[2];
-                        int length = Integer.parseInt(parts[3]);
-
-                        byte[] imageBytes = new byte[length];
-                        InputStream is = socket.getInputStream();
-                        int bytesRead, total = 0;
-                        while (total < length && (bytesRead = is.read(imageBytes, total, length - total)) > 0) {
-                            total += bytesRead;
+                    case "CREATE_GROUP":
+                        // Expected format: CREATE_GROUP|creator|groupName|member1,member2,...
+                        // The creator will always be included automatically. Member list can be empty.
+                        if (parts.length >= 3) {
+                            String creator = parts[1];
+                            String groupName = parts[2];
+                            String memberCsv = parts.length >= 4 ? parts[3] : "";
+                            // Split comma-separated members and add them to the set
+                            Set<String> members = Collections.newSetFromMap(new ConcurrentHashMap<>());
+                            if (memberCsv != null && !memberCsv.isEmpty()) {
+                                String[] memArr = memberCsv.split(",");
+                                for (String m : memArr) {
+                                    String trimmed = m.trim();
+                                    if (!trimmed.isEmpty()) {
+                                        members.add(trimmed);
+                                    }
+                                }
+                            }
+                            // Always include the creator
+                            members.add(creator);
+                            if (groupMembers.containsKey(groupName)) {
+                                out.println("ERROR|Group already exists");
+                            } else {
+                                groupMembers.put(groupName, members);
+                                System.out.println("Group created: " + groupName + " by " + creator + " with members " + members);
+                                // Notify all online members of the new group. Offline members will learn through group list on next login.
+                                String memberListCsv = String.join(",", members);
+                                String notifyMsg = "GROUP_CREATED|" + groupName + "|" + creator + "|" + memberListCsv;
+                                for (String m : members) {
+                                    PrintWriter target = onlineWriters.get(m);
+                                    if (target != null) {
+                                        target.println(notifyMsg);
+                                    }
+                                }
+                            }
                         }
+                        break;
 
-                        File userDir = new File("users/" + username);
-                        userDir.mkdirs();
-                        File imageFile = new File(userDir, "profile.jpg");
-                        Files.write(imageFile.toPath(), imageBytes);
+                    case "GROUP_MSG":
+                        // Format: GROUP_MSG|groupName|sender|timestamp|message
+                        if (parts.length >= 5) {
+                            String groupName = parts[1];
+                            String senderUser = parts[2];
+                            String timestampStr = parts[3];
+                            String body = parts[4];
+                            Set<String> members = groupMembers.get(groupName);
+                            if (members == null) {
+                                out.println("ERROR|No such group");
+                                break;
+                            }
+                            if (!members.contains(senderUser)) {
+                                out.println("ERROR|Not a member of " + groupName);
+                                break;
+                            }
+                            // Persist and broadcast
+                            String record = senderUser + "|" + timestampStr + "|" + body;
+                            for (String member : members) {
+                                appendToChatFile(member, groupName, record);
+                            }
+                            String full = "GROUP_MSG|" + groupName + "|" + senderUser + "|" + timestampStr + "|" + body;
+                            for (String member : members) {
+                                if (!member.equals(senderUser)) {
+                                    PrintWriter pw = onlineWriters.get(member);
+                                    if (pw != null) pw.println(full);
+                                    else saveOfflineMessage(member, groupName, senderUser, timestampStr, body);
+                                }
+                            }
+                        }
+                        break;
 
-                        System.out.println("Saved profile photo for user: " + username);
+
+                    case "GROUPS_REQUEST":
+                        // Respond with a comma-separated list of groups that this user belongs to
+                        if (parts.length >= 2) {
+                            String userReq = parts[1];
+                            List<String> groupsOfUser = new ArrayList<>();
+                            for (Map.Entry<String, Set<String>> entry : groupMembers.entrySet()) {
+                                if (entry.getValue().contains(userReq)) {
+                                    groupsOfUser.add(entry.getKey());
+                                }
+                            }
+                            String csv = String.join(",", groupsOfUser);
+                            // Use GROUP_LIST prefix to be compatible with client expectations
+                            out.println("GROUP_LIST|" + csv);
+                        }
                         break;
 
                     case "SEND_REQUEST":
@@ -141,10 +221,8 @@ public class ClientHandler implements Runnable {
                             String from = parts[1];
                             String to = parts[2];
                             System.out.println("Processing SEND_REQUEST from " + from + " to " + to);
-
                             User sender = Database.loadUser(from);
                             User receiver = Database.loadUser(to);
-
                             if (sender != null && receiver != null) {
                                 sender.sendFriendRequest(receiver);
                                 Database.saveUser(sender);
@@ -166,18 +244,16 @@ public class ClientHandler implements Runnable {
                         if (parts.length >= 3) {
                             String user = parts[1];
                             String from = parts[2];
-
                             User u1 = Database.loadUser(user);
                             User u2 = Database.loadUser(from);
-
                             if (u1 != null && u2 != null) {
                                 u1.acceptFriendRequest(u2);
                                 Database.saveUser(u1);
                                 Database.saveUser(u2);
                                 System.out.println("Friend request accepted: " + user + " accepted " + from);
-                                if (onlineWriters.containsKey(u2)) {
-                                    onlineWriters.get(u2).println("ACCEPTED_REQUEST_FROM|" + user);
-                                    System.out.println("Notified " + u2 + " of accepted request from " + user);
+                                if (onlineWriters.containsKey(u2.getUsername())) {
+                                    onlineWriters.get(u2.getUsername()).println("ACCEPTED_REQUEST_FROM|" + user);
+                                    System.out.println("Notified " + u2.getUsername() + " of accepted request from " + user);
                                 }
                             } else {
                                 System.out.println("User not found for ACCEPT_REQUEST: user=" + user + ", from=" + from);
@@ -189,18 +265,16 @@ public class ClientHandler implements Runnable {
                         if (parts.length >= 3) {
                             String user = parts[1];
                             String from = parts[2];
-
                             User u1 = Database.loadUser(user);
                             User u2 = Database.loadUser(from);
-
                             if (u1 != null && u2 != null) {
                                 u1.declineFriendRequest(u2);
                                 Database.saveUser(u1);
                                 Database.saveUser(u2);
                                 System.out.println("Friend request declined: " + user + " declined " + from);
-                                if (onlineWriters.containsKey(u2)) {
-                                    onlineWriters.get(u2).println("DECLINED_REQUEST_FROM|" + user);
-                                    System.out.println("Notified " + u2 + " of declined request from " + user);
+                                if (onlineWriters.containsKey(u2.getUsername())) {
+                                    onlineWriters.get(u2.getUsername()).println("DECLINED_REQUEST_FROM|" + user);
+                                    System.out.println("Notified " + u2.getUsername() + " of declined request from " + user);
                                 }
                             } else {
                                 System.out.println("User not found for DECLINE_REQUEST: user=" + user + ", from=" + from);
@@ -211,7 +285,9 @@ public class ClientHandler implements Runnable {
             }
         } catch (IOException ignored) {
         } finally {
-            if (username != null) onlineWriters.remove(username);
+            if (username != null) {
+                onlineWriters.remove(username);
+            }
             try {
                 socket.close();
             } catch (IOException ignored) {
@@ -219,32 +295,43 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    // Helper methods for user management, chat history, and offline message handling follow…
+    // These methods include: userExists, saveCredentials, verifyCredentials,
+    // updateChatHistory, appendToChatFile, saveOfflineMessage (for both private and group),
+    // sendOfflineMessages, and sendChatHistory.
     private static final File CRED_FILE = new File("users.txt");
 
     private boolean userExists(String user) throws IOException {
         if (!CRED_FILE.exists()) return false;
-        try (BufferedReader br = new BufferedReader(new FileReader(CRED_FILE))) {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(CRED_FILE), StandardCharsets.UTF_8))) {
             String l;
-            while ((l = br.readLine()) != null)
-                if (l.split("\\|", 2)[0].equals(user)) return true;
+            while ((l = br.readLine()) != null) {
+                if (l.split("\\|", 2)[0].equals(user)) {
+                    return true;
+                }
+            }
             return false;
         }
     }
 
     private void saveCredentials(String user, String pass) throws IOException {
-        if (!CRED_FILE.exists()) CRED_FILE.createNewFile();
-        try (PrintWriter pw = new PrintWriter(new FileWriter(CRED_FILE, true))) {
+        if (!CRED_FILE.exists()) {
+            CRED_FILE.createNewFile();
+        }
+        try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(CRED_FILE, true), StandardCharsets.UTF_8))) {
             pw.println(user + "|" + pass);
         }
     }
 
     private boolean verifyCredentials(String user, String pass) throws IOException {
         if (!CRED_FILE.exists()) return false;
-        try (BufferedReader br = new BufferedReader(new FileReader(CRED_FILE))) {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(CRED_FILE), StandardCharsets.UTF_8))) {
             String l;
             while ((l = br.readLine()) != null) {
                 String[] p = l.split("\\|", 2);
-                if (p.length == 2 && p[0].equals(user) && p[1].equals(pass)) return true;
+                if (p.length == 2 && p[0].equals(user) && p[1].equals(pass)) {
+                    return true;
+                }
             }
             return false;
         }
@@ -258,9 +345,11 @@ public class ClientHandler implements Runnable {
 
     private void appendToChatFile(String user, String friend, String line) {
         File dir = new File(CHAT_FOLDER + "/" + user);
-        if (!dir.exists()) dir.mkdirs();
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
         File chatFile = new File(dir, friend + ".txt");
-        try (PrintWriter writer = new PrintWriter(new FileWriter(chatFile, true))) {
+        try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(chatFile, true), StandardCharsets.UTF_8))) {
             writer.println(line);
         } catch (IOException e) {
             System.err.println("Failed to append to chat file for " + user + ": " + e.getMessage());
@@ -269,9 +358,24 @@ public class ClientHandler implements Runnable {
 
     private void saveOfflineMessage(String to, String from, String timestampStr, String message) {
         File dir = new File(CHAT_FOLDER + "/" + to);
-        if (!dir.exists()) dir.mkdirs();
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
         File offlineFile = new File(dir, from + ".offline.txt");
-        try (PrintWriter writer = new PrintWriter(new FileWriter(offlineFile, true))) {
+        try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(offlineFile, true), StandardCharsets.UTF_8))) {
+            writer.println(from + "|" + timestampStr + "|" + message);
+        } catch (IOException e) {
+            System.err.println("Failed to save offline message for " + to + ": " + e.getMessage());
+        }
+    }
+
+    private void saveOfflineMessage(String to, String group, String from, String timestampStr, String message) {
+        File dir = new File(CHAT_FOLDER + "/" + to);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        File offlineFile = new File(dir, group + ".offline.txt");
+        try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(offlineFile, true), StandardCharsets.UTF_8))) {
             writer.println(from + "|" + timestampStr + "|" + message);
         } catch (IOException e) {
             System.err.println("Failed to save offline message for " + to + ": " + e.getMessage());
@@ -281,11 +385,11 @@ public class ClientHandler implements Runnable {
     private void sendOfflineMessages(String username, PrintWriter writer) {
         File folder = new File(CHAT_FOLDER + "/" + username);
         if (!folder.exists()) return;
-        File[] files = folder.listFiles((d, name) -> name.endsWith(".offline.txt"));
+        File[] files = folder.listFiles((dir, name) -> name.endsWith(".offline.txt"));
         if (files == null) return;
         for (File file : files) {
             String friend = file.getName().replace(".offline.txt", "");
-            try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
                 String line;
                 while ((line = br.readLine()) != null) {
                     String[] parts = line.split("\\|", 3);
@@ -325,7 +429,7 @@ public class ClientHandler implements Runnable {
                 continue;
             }
             List<String> history = new ArrayList<>();
-            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     String[] parts = line.split("\\|", 3);
@@ -347,3 +451,5 @@ public class ClientHandler implements Runnable {
         }
     }
 }
+
+
