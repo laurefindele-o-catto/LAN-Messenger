@@ -1,5 +1,3 @@
-
-
 package main.java.server;
 
 import main.java.user.Database;
@@ -8,14 +6,9 @@ import main.java.user.User;
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.Collections;
 
 /**
  * Handles communication with a single client.  Uses a unified protocol for
@@ -27,7 +20,23 @@ public class ClientHandler implements Runnable {
 
     private static final Map<String, PrintWriter> onlineWriters = new ConcurrentHashMap<>();
     private static final Map<String, Set<String>> groupMembers = new ConcurrentHashMap<>();
+
     private static final String CHAT_FOLDER = "chats";
+    /**
+     * Root folder where group membership files are stored.  Each group
+     * corresponds to a file named <group>.members containing one username
+     * per line.  Persisting memberships allows groups to survive server
+     * restarts so they remain available the next time the server starts.
+     */
+    private static final String GROUP_FOLDER = "groups";
+
+    // Static initializer to load any previously saved group memberships.  This
+    // block executes when the class is first loaded, ensuring the
+    // groupMembers map is populated before any handler instances process
+    // requests.
+    static {
+        loadGroupMembersFromDisk();
+    }
 
     private final Socket socket;
     private BufferedReader in;
@@ -112,7 +121,7 @@ public class ClientHandler implements Runnable {
                             } else {
                                 saveOfflineMessage(to, from, timestampStr, body);
                             }
-                        } else if (parts.length == 4) { // Handle legacy format
+                        } else if (parts.length == 4) {
                             String from = parts[1];
                             String to = parts[2];
                             String body = parts[3];
@@ -131,7 +140,6 @@ public class ClientHandler implements Runnable {
 
                     case "CREATE_GROUP":
                         // Expected format: CREATE_GROUP|creator|groupName|member1,member2,...
-                        // The creator will always be included automatically. Member list can be empty.
                         if (parts.length >= 3) {
                             String creator = parts[1];
                             String groupName = parts[2];
@@ -154,7 +162,9 @@ public class ClientHandler implements Runnable {
                             } else {
                                 groupMembers.put(groupName, members);
                                 System.out.println("Group created: " + groupName + " by " + creator + " with members " + members);
-                                // Notify all online members of the new group. Offline members will learn through group list on next login.
+                                // Persist the new group's membership to disk so it survives server restarts
+                                saveGroupMembersToDisk(groupName, members);
+                                // Notify all online members of the new group
                                 String memberListCsv = String.join(",", members);
                                 String notifyMsg = "GROUP_CREATED|" + groupName + "|" + creator + "|" + memberListCsv;
                                 for (String m : members) {
@@ -199,7 +209,6 @@ public class ClientHandler implements Runnable {
                         }
                         break;
 
-
                     case "GROUPS_REQUEST":
                         // Respond with a comma-separated list of groups that this user belongs to
                         if (parts.length >= 2) {
@@ -211,11 +220,9 @@ public class ClientHandler implements Runnable {
                                 }
                             }
                             String csv = String.join(",", groupsOfUser);
-                            // Use GROUP_LIST prefix to be compatible with client expectations
                             out.println("GROUP_LIST|" + csv);
                         }
                         break;
-
                     case "SEND_REQUEST":
                         if (parts.length >= 3) {
                             String from = parts[1];
@@ -281,6 +288,7 @@ public class ClientHandler implements Runnable {
                             }
                         }
                         break;
+                    // ... (other cases remain unchanged, including friend requests) ...
                 }
             }
         } catch (IOException ignored) {
@@ -295,10 +303,9 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    // Helper methods for user management, chat history, and offline message handling follow…
-    // These methods include: userExists, saveCredentials, verifyCredentials,
-    // updateChatHistory, appendToChatFile, saveOfflineMessage (for both private and group),
-    // sendOfflineMessages, and sendChatHistory.
+    // User credential management (userExists, saveCredentials, verifyCredentials)
+    // and chat history methods (updateChatHistory, appendToChatFile, saveOfflineMessage,
+    // sendOfflineMessages, sendChatHistory) remain unchanged.
     private static final File CRED_FILE = new File("users.txt");
 
     private boolean userExists(String user) throws IOException {
@@ -448,6 +455,67 @@ public class ClientHandler implements Runnable {
                 writer.println(lineToSend);
                 System.out.println("Sent chat history to " + username + " for " + friend);
             }
+        }
+    }
+    /**
+     * Load all persisted group membership files from disk into the in-memory
+     * groupMembers map.  Each file in the GROUP_FOLDER directory with a
+     * ".members" extension is interpreted as a group name.  Lines within the
+     * file are treated as usernames belonging to that group.  If the folder
+     * does not exist or no valid files are found, nothing happens.
+     */
+    private static void loadGroupMembersFromDisk() {
+        File dir = new File(GROUP_FOLDER);
+        if (!dir.exists()) {
+            return;
+        }
+        File[] files = dir.listFiles((d, name) -> name.endsWith(".members"));
+        if (files == null) {
+            return;
+        }
+        for (File f : files) {
+            String fname = f.getName();
+            String groupName = fname.substring(0, fname.length() - ".members".length());
+            Set<String> members = Collections.newSetFromMap(new ConcurrentHashMap<>());
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(f), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    String trimmed = line.trim();
+                    if (!trimmed.isEmpty()) {
+                        members.add(trimmed);
+                    }
+                }
+            } catch (IOException e) {
+                System.err.println("Failed to load group membership for " + groupName + ": " + e.getMessage());
+                continue;
+            }
+            if (!members.isEmpty()) {
+                groupMembers.put(groupName, members);
+            }
+        }
+    }
+
+    /**
+     * Persist a single group's membership to disk.  Creates the GROUP_FOLDER
+     * directory if necessary and writes a file named <groupName>.members
+     * containing one username per line.  Overwrites any existing file for
+     * that group.  Called whenever a new group is created.
+     *
+     * @param groupName the name of the group
+     * @param members   set of usernames belonging to the group
+     */
+    private static void saveGroupMembersToDisk(String groupName, Set<String> members) {
+        File dir = new File(GROUP_FOLDER);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        File f = new File(dir, groupName + ".members");
+        try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(f), StandardCharsets.UTF_8))) {
+            for (String m : members) {
+                pw.println(m);
+            }
+        } catch (IOException e) {
+            System.err.println("Failed to save group membership for " + groupName + ": " + e.getMessage());
         }
     }
 }
