@@ -7,6 +7,7 @@
     lists friends and groups, and the center area shows the chat history
     along with a message composer.  An image attachment button (paper clip)
     is included next to the message field to allow sending images.
+    NEW: A chatTitleLabel at the top displays the selected friend or group name.
 -->
 
 <?import javafx.scene.control.*?>
@@ -49,6 +50,11 @@
     <!-- ===================== CENTER CHAT AREA ===================== -->
     <center>
         <VBox spacing="10" style="-fx-background-color:#2b2b2b;-fx-padding:12;">
+            <!-- NEW: Title showing the current conversation name -->
+            <Label fx:id="chatTitleLabel"
+                   text=""
+                   style="-fx-text-fill:white; -fx-font-size:16; -fx-font-weight:bold;" />
+
             <!-- Scrollable conversation history -->
             <ScrollPane fx:id="chatScrollPane" fitToWidth="true" fitToHeight="true"
                         hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS"
@@ -60,7 +66,7 @@
 
             <!-- Composer: image attach button, message field, send button -->
             <HBox spacing="8">
-                <!-- Image attachment button with properly defined Tooltip -->
+                <!-- Image attachment button with proper Tooltip -->
                 <Button fx:id="imageButton"
                         text="📎"
                         maxHeight="Infinity" maxWidth="Infinity"
@@ -108,23 +114,36 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         <!--<?xml version="1.0" encoding="UTF-8"?>-->
 
 <!--&lt;!&ndash;-->
 <!--    ChatBox.fxml-->
 
-<!--    This layout defines the main chat user interface.  It uses a BorderPane-->
-<!--    with a left sidebar for the friends and groups list, and a center area-->
-<!--    for the active conversation.  The message composer includes a button-->
-<!--    for attaching images (paper‑clip) followed by a text field and a send-->
-<!--    button.  All existing fx:id bindings are retained so the controller-->
-<!--    logic works without modification.-->
+<!--    Defines the chat window UI using a BorderPane.  The left sidebar-->
+<!--    lists friends and groups, and the center area shows the chat history-->
+<!--    along with a message composer.  An image attachment button (paper clip)-->
+<!--    is included next to the message field to allow sending images.-->
 <!--&ndash;&gt;-->
 
 <!--<?import javafx.scene.control.*?>-->
 <!--<?import javafx.scene.layout.*?>-->
 <!--<?import javafx.geometry.*?>-->
 <!--<?import java.net.URL?>-->
+<!--<?import javafx.scene.control.Tooltip?>-->
 
 <!--<BorderPane fx:controller="main.java.controller.ChatBoxController"-->
 <!--            xmlns="http://javafx.com/javafx"-->
@@ -169,14 +188,17 @@
 <!--                </content>-->
 <!--            </ScrollPane>-->
 
-<!--            &lt;!&ndash; Composer: image attach, message field, send button &ndash;&gt;-->
+<!--            &lt;!&ndash; Composer: image attach button, message field, send button &ndash;&gt;-->
 <!--            <HBox spacing="8">-->
-<!--                &lt;!&ndash; Image attachment button &ndash;&gt;-->
+<!--                &lt;!&ndash; Image attachment button with properly defined Tooltip &ndash;&gt;-->
 <!--                <Button fx:id="imageButton"-->
 <!--                        text="📎"-->
-<!--                        tooltip="Attach Image"-->
 <!--                        maxHeight="Infinity" maxWidth="Infinity"-->
-<!--                        style="-fx-background-color:transparent; -fx-text-fill:#ddd; -fx-font-size:14;" />-->
+<!--                        style="-fx-background-color:transparent; -fx-text-fill:#ddd; -fx-font-size:14;">-->
+<!--                    <tooltip>-->
+<!--                        <Tooltip text="Attach Image" />-->
+<!--                    </tooltip>-->
+<!--                </Button>-->
 
 <!--                &lt;!&ndash; Text input &ndash;&gt;-->
 <!--                <TextField fx:id="messageField"-->
@@ -190,5 +212,30 @@
 <!--            </HBox>-->
 <!--        </VBox>-->
 <!--    </center>-->
-
 <!--</BorderPane>-->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- -->
