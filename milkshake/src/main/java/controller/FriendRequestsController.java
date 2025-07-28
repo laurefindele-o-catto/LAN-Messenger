@@ -22,7 +22,7 @@ import main.java.util.sceneChange;
 import java.io.File;
 import java.util.Set;
 
-public class FriendRequestsController implements UserInterface, ClientConnection.MessageListener {
+public class FriendRequestsController implements UserInterface, ClientConnection.FriendListener {
 
     @FXML private VBox requestsBox;
     @FXML private Button backBtn;
@@ -38,14 +38,18 @@ public class FriendRequestsController implements UserInterface, ClientConnection
 
     @FXML
     public void initialize() {
-        ClientConnection.getInstance().registerListener(this);
+        ClientConnection.getInstance().registerFriendListener(this);
         ClientConnection.getInstance().setCurrentController(this);
 
         if (user == null) {
             user = Session.getCurrentUser();
         }
 
-        backBtn.setOnAction(e -> sceneChange.changeScene("Dashboard.fxml", backBtn, user));
+        backBtn.setOnAction(e ->
+        {
+            ClientConnection.getInstance().removeFriendListener(this);
+            sceneChange.changeScene("Dashboard.fxml", backBtn, user);
+        });
 
         if (user != null) {
             refresh();
@@ -121,12 +125,28 @@ public class FriendRequestsController implements UserInterface, ClientConnection
         }
     }
 
+//    @Override
+//    public void handlingRequests(String from, String body, String to) {
+//        if (body.startsWith("ACCEPTED_REQUEST_FROM") || body.startsWith("DECLINED_REQUEST_FROM") || body.startsWith("GOT_FRIEND_REQUEST_FROM")) {
+//            System.out.println("FriendRequestsController received: " + body + " for user " + user.getUsername());
+//            Session.refreshCurrentUser();
+//            refresh();
+//        }
+//    }
+
+
     @Override
-    public void onMessageReceived(String from, String body) {
-        if (body.startsWith("ACCEPTED_REQUEST_FROM") || body.startsWith("DECLINED_REQUEST_FROM") || body.startsWith("GOT_FRIEND_REQUEST_FROM")) {
-            System.out.println("FriendRequestsController received: " + body + " for user " + user.getUsername());
-            Session.refreshCurrentUser();
-            refresh();
-        }
+    public void onFriendRequestReceived(String from) {
+        Platform.runLater(this::refresh);
+    }
+
+    @Override
+    public void onFriendRequestAccepted(String from) {
+        Platform.runLater(this::refresh);
+    }
+
+    @Override
+    public void onFriendRequestDeclined(String from) {
+        Platform.runLater(this::refresh);
     }
 }

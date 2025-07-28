@@ -530,6 +530,7 @@ import main.java.user.User;
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -648,6 +649,7 @@ public class ClientHandler implements Runnable {
                 case "SEND_REQUEST":  handleSendRequest(pieces);   break;
                 case "ACCEPT_REQUEST":handleAcceptRequest(pieces); break;
                 case "DECLINE_REQUEST":handleDeclineRequest(pieces);break;
+                case "UPLOAD_PROFILE_PHOTO": handleUploadProfilePhoto(pieces); break;
                 /* Unknown commands are ignored for now */
             }
         }
@@ -1228,6 +1230,32 @@ public class ClientHandler implements Runnable {
             }
         } catch (IOException ex) {
             System.err.println("Cannot persist group members: " + ex.getMessage());
+        }
+    }
+    private void handleUploadProfilePhoto(String[] parts) {
+        try {
+            String username = parts[1];
+            String filename = parts[2];
+            int length = Integer.parseInt(parts[3]);
+
+            byte[] imageBytes = new byte[length];
+            InputStream is = socket.getInputStream();
+            int bytesRead, total = 0;
+            while (total < length && (bytesRead = is.read(imageBytes, total, length - total)) > 0) {
+                total += bytesRead;
+            }
+
+            System.out.println("Read " + total + " of " + length + " bytes");
+
+            // Save under users/username/profile.jpg
+            File userDir = new File("users/" + username);
+            userDir.mkdirs();
+            File imageFile = new File(userDir, "profile.jpg");
+            Files.write(imageFile.toPath(), imageBytes);
+
+            System.out.println("Saved profile photo for user: " + username);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
