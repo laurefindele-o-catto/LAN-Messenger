@@ -37,16 +37,21 @@ public class ChatBoxController implements Initializable, ClientConnection.Messag
     @FXML private Button sendButton;
     @FXML private Button backButton;
     @FXML private Button createGroupButton;
-    // Button for attaching images, may be null if not present in FXML
+    // Button for attaching images
     @FXML private Button imageButton;
 
-    // NEW: Displays the current conversation title
+    // NEW: button to view group members
+    @FXML private Button membersButton;
+
+    // Label that shows the current conversation name (friend or group)
     @FXML private Label chatTitleLabel;
 
     private User currentUser;
     private ClientConnection connection;
     private final Map<String, List<Message>> chatHistory = new HashMap<>();
     private final Set<String> groups = new HashSet<>();
+    // NEW: map of group name to its members (including the creator and yourself)
+    private final Map<String, List<String>> groupMembersMap = new HashMap<>();
     private static final DateTimeFormatter TIMESTAMP_FORMATTER =
             DateTimeFormatter.ofPattern("HH:mm");
 
@@ -73,9 +78,12 @@ public class ChatBoxController implements Initializable, ClientConnection.Messag
         if (createGroupButton != null) {
             createGroupButton.setOnAction(e -> openGroupCreationDialog());
         }
-        // Wire up image attachment button
         if (imageButton != null) {
             imageButton.setOnAction(e -> sendImageAttachment());
+        }
+        // NEW: wire up the members button to show group members
+        if (membersButton != null) {
+            membersButton.setOnAction(e -> showGroupMembers());
         }
     }
 
@@ -133,9 +141,14 @@ public class ChatBoxController implements Initializable, ClientConnection.Messag
     }
 
     private void loadChat(String conversation) {
-        // Update the chat title to show the current friend or group name
+        // Update the title label to show the current conversation name
         if (chatTitleLabel != null) {
             chatTitleLabel.setText(conversation == null ? "" : conversation);
+        }
+        // Show or hide the "Members" button based on whether this is a group chat
+        if (membersButton != null) {
+            boolean isGroup = conversation != null && groups.contains(conversation);
+            membersButton.setVisible(isGroup);
         }
         chatMessagesBox.getChildren().clear();
         if (conversation == null) return;
@@ -167,7 +180,7 @@ public class ChatBoxController implements Initializable, ClientConnection.Messag
         messageField.clear();
     }
 
-    /** Selects an image file, encodes it as Base64, and sends it. */
+    /** Selects an image file, encodes it as base64, and sends it. */
     private void sendImageAttachment() {
         String conversation = friendListView.getSelectionModel().getSelectedItem();
         if (conversation == null) {
@@ -184,7 +197,7 @@ public class ChatBoxController implements Initializable, ClientConnection.Messag
         }
         try {
             byte[] bytes = Files.readAllBytes(file.toPath());
-            String encoded = Base64.getEncoder().encodeToString(bytes);
+            String encoded = java.util.Base64.getEncoder().encodeToString(bytes);
             String body = "IMG:" + file.getName() + ":" + encoded;
             LocalDateTime ts = LocalDateTime.now();
             Message m = new Message(currentUser.getUsername(), conversation, body, ts);
@@ -214,7 +227,37 @@ public class ChatBoxController implements Initializable, ClientConnection.Messag
         }
     }
 
-    /** Builds a chat bubble, decoding images when the text starts with IMG:. */
+    /** Shows the members of the currently selected group chat. */
+    private void showGroupMembers() {
+        String conversation = friendListView.getSelectionModel().getSelectedItem();
+        if (conversation == null || !groups.contains(conversation)) {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Group Members");
+            alert.setHeaderText(null);
+            alert.setContentText("This conversation is not a group chat.");
+            alert.showAndWait();
+            return;
+        }
+        List<String> members = groupMembersMap.get(conversation);
+        if (members == null || members.isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Group Members");
+            alert.setHeaderText(null);
+            alert.setContentText("No member information available for this group.");
+            alert.showAndWait();
+            return;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (String m : members) {
+            sb.append(m).append("\n");
+        }
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Group Members");
+        alert.setHeaderText("Members of " + conversation);
+        alert.setContentText(sb.toString());
+        alert.showAndWait();
+    }
+
     private HBox makeBubble(Message m) {
         boolean isSent = m.getSender().equals(currentUser.getUsername());
         boolean isGroup = groups.contains(m.getReceiver());
@@ -223,14 +266,14 @@ public class ChatBoxController implements Initializable, ClientConnection.Messag
         box.setPadding(new Insets(4, 8, 4, 8));
 
         String text = m.getText();
-        // Handle image messages encoded as IMG:<filename>:<base64>
+        // If the message starts with IMG:, parse and display the image
         if (text != null && text.startsWith("IMG:")) {
             String payload = text.substring(4);
             int idx = payload.indexOf(":");
             if (idx > 0) {
                 String encoded = payload.substring(idx + 1);
                 try {
-                    byte[] data = Base64.getDecoder().decode(encoded);
+                    byte[] data = java.util.Base64.getDecoder().decode(encoded);
                     Image img = new Image(new ByteArrayInputStream(data));
                     ImageView iv = new ImageView(img);
                     iv.setFitWidth(200);
@@ -254,8 +297,8 @@ public class ChatBoxController implements Initializable, ClientConnection.Messag
                         box.getChildren().add(v);
                     }
                 } catch (Exception e) {
-                    String fallbackText = isGroup && !isSent ? m.getSender() + ": [Invalid image]" : "[Invalid image]";
-                    Text textNode = new Text(fallbackText);
+                    String fallback = isGroup && !isSent ? m.getSender() + ": [Invalid image]" : "[Invalid image]";
+                    Text textNode = new Text(fallback);
                     Text timestampNode = new Text("[" + m.getTimestamp().format(TIMESTAMP_FORMATTER) + "] ");
                     timestampNode.setStyle("-fx-font-size: 10px; -fx-fill: gray;");
                     TextFlow flow = new TextFlow(timestampNode, textNode);
@@ -264,7 +307,7 @@ public class ChatBoxController implements Initializable, ClientConnection.Messag
                     box.getChildren().add(flow);
                 }
             } else {
-                // Malformed image message; treat remainder as text
+                // Malformed image message, treat the remainder as text
                 String remainder = payload;
                 String displayText = isGroup && !isSent ? m.getSender() + ": " + remainder : remainder;
                 Text textNode = new Text(displayText);
@@ -301,7 +344,7 @@ public class ChatBoxController implements Initializable, ClientConnection.Messag
         Platform.runLater(() -> handleIncomingMessage(from, body));
     }
 
-    /** Handles incoming messages without needing special cases for images. */
+    /** Processes various incoming messages.  Also collects group members. */
     private void handleIncomingMessage(String from, String body) {
         try {
             if (body.startsWith("CHAT_HISTORY|")) {
@@ -346,6 +389,19 @@ public class ChatBoxController implements Initializable, ClientConnection.Messag
                     if (groupName.equals(friendListView.getSelectionModel().getSelectedItem())) {
                         loadChat(groupName);
                     }
+                    // NEW: infer members from chat history if none have been stored yet
+                    if (!groupMembersMap.containsKey(groupName)) {
+                        Set<String> senders = new LinkedHashSet<>();
+                        for (Message msg : history) {
+                            String sender = msg.getSender();
+                            if (sender != null && !sender.isEmpty()) {
+                                senders.add(sender);
+                            }
+                        }
+                        // Always include yourself
+                        senders.add(currentUser.getUsername());
+                        groupMembersMap.put(groupName, new ArrayList<>(senders));
+                    }
                 }
                 return;
             }
@@ -380,6 +436,24 @@ public class ChatBoxController implements Initializable, ClientConnection.Messag
                     if (include) {
                         groups.add(groupName);
                         populateFriendList();
+                        // NEW: parse and store the group members from this creation event
+                        List<String> memberList = new ArrayList<>();
+                        if (creator != null && !creator.isEmpty()) {
+                            memberList.add(creator);
+                        }
+                        if (members != null && !members.isEmpty()) {
+                            for (String m : members.split(",")) {
+                                String trimmed = m.trim();
+                                if (!trimmed.isEmpty() && !memberList.contains(trimmed)) {
+                                    memberList.add(trimmed);
+                                }
+                            }
+                        }
+                        // Always include the current user if not already in list
+                        if (!memberList.contains(currentUser.getUsername())) {
+                            memberList.add(currentUser.getUsername());
+                        }
+                        groupMembersMap.put(groupName, memberList);
                     }
                 }
                 return;
@@ -397,7 +471,7 @@ public class ChatBoxController implements Initializable, ClientConnection.Messag
                 }
                 return;
             }
-            // Fallback: private or unrecognized message
+            // Fallback for private or other messages
             String[] bodyParts = body.split("\\|", 2);
             String tsStr = bodyParts[0];
             String msgText = bodyParts.length > 1 ? bodyParts[1] : "";

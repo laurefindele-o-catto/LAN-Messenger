@@ -8,21 +8,47 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane prefHeight="420" prefWidth="600" style="-fx-background-color: black;" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="main.java.controller.FriendRequestsController">
+<!--
+    Duplicate of the root-level FriendRequests.fxml placed under the view/
+    directory.  The sceneChange utility always loads FXML files from
+    /view/, so copying the file here ensures the friend request dashboard
+    can be loaded correctly without throwing a “file not found” error.
+-->
+<AnchorPane prefHeight="420" prefWidth="600" style="-fx-background-color: black;"
+            xmlns="http://javafx.com/javafx/23.0.1"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="main.java.controller.FriendRequestsController">
 
-    <VBox alignment="TOP_CENTER" spacing="10" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="10.0">
+    <VBox alignment="TOP_CENTER"
+          spacing="10"
+          AnchorPane.bottomAnchor="20.0"
+          AnchorPane.leftAnchor="20.0"
+          AnchorPane.rightAnchor="20.0"
+          AnchorPane.topAnchor="10.0">
         <!-- Back Button -->
         <HBox alignment="CENTER_LEFT">
-            <Button fx:id="backBtn" contentDisplay="CENTER" style="-fx-background-color: azure; -fx-text-fill: black; -fx-border-radius: 8; -fx-background-radius: 8; -fx-border-color: grey; -fx-border-width: 2;" text="← Dashboard" textFill="#ebe1e1" />
+            <Button fx:id="backBtn"
+                    contentDisplay="CENTER"
+                    style="-fx-background-color: azure; -fx-text-fill: black; -fx-border-radius: 8; -fx-background-radius: 8; -fx-border-color: grey; -fx-border-width: 2;"
+                    text="← Dashboard"
+                    textFill="#ebe1e1" />
         </HBox>
 
-        <Label style="-fx-font-size: 22px;" text="Friend Requests" textFill="#efe6e6">
+        <Label style="-fx-font-size: 22px;"
+               text="Friend Requests"
+               textFill="#efe6e6">
             <font>
                 <Font name="Arial Italic" size="12.0" />
-            </font></Label>
+            </font>
+        </Label>
 
-        <ScrollPane fx:id="scrollPane" fitToWidth="true" prefHeight="340" style="-fx-background: black;">
-            <VBox fx:id="requestsBox" spacing="10" style="-fx-padding: 10;" />
+        <ScrollPane fx:id="scrollPane"
+                    fitToWidth="true"
+                    prefHeight="340"
+                    style="-fx-background: black;">
+            <VBox fx:id="requestsBox"
+                  spacing="10"
+                  style="-fx-padding: 10;" />
         </ScrollPane>
     </VBox>
 </AnchorPane>

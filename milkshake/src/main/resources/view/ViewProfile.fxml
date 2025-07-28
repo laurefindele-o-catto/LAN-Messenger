@@ -1,23 +1,43 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.control.*?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.*?>
-<?import javafx.scene.text.*?>
+<?import javafx.scene.text.Font?>
 
-<AnchorPane xmlns="http://javafx.com/javafx/23.0.1" prefHeight="400.0" prefWidth="450.0" style="-fx-background-color: black;"
+<!--
+    Duplicate of the root-level ViewProfile.fxml placed under view/.  Without
+    this copy, sceneChange will not find the profile-view FXML when loaded
+    via “ViewProfile.fxml” in the dashboard or friend list.  This ensures
+    consistent location resolution by the sceneChange utility.
+-->
+<AnchorPane prefHeight="400.0"
+            prefWidth="450.0"
+            style="-fx-background-color: black;"
+            xmlns="http://javafx.com/javafx/23.0.1"
             xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="main.java.controller.ViewProfileController">
 
-    <VBox alignment="CENTER" spacing="15.0" AnchorPane.topAnchor="20.0" AnchorPane.leftAnchor="30.0" AnchorPane.rightAnchor="30.0">
-        <ImageView fx:id="profilePic" fitHeight="120.0" fitWidth="120.0" preserveRatio="true" />
-        <Label fx:id="usernameLabel" textFill="white">
+    <VBox alignment="CENTER"
+          spacing="15.0"
+          AnchorPane.topAnchor="20.0"
+          AnchorPane.leftAnchor="30.0"
+          AnchorPane.rightAnchor="30.0">
+        <ImageView fx:id="profilePic"
+                   fitHeight="120.0"
+                   fitWidth="120.0"
+                   preserveRatio="true" />
+
+        <Label fx:id="usernameLabel"
+               textFill="white">
             <font>
-                <Font name="Calibri" size="18"/>
+                <Font name="Calibri" size="18" />
             </font>
         </Label>
 
-        <Label fx:id="bioLabel" textFill="#cfcfcf" wrapText="true" />
+        <Label fx:id="bioLabel"
+               textFill="#cfcfcf"
+               wrapText="true" />
 
         <HBox spacing="20">
             <Button fx:id="sendFriendRequestBtn"
