@@ -5,7 +5,7 @@ import java.net.*;
 import java.util.concurrent.*;
 
 public class Server {
-    private static final int PORT = 12345;
+    private static final int PORT = 12346;
     private static ExecutorService pool = Executors.newFixedThreadPool(10);
 
     public static void main(String[] args) throws IOException{
