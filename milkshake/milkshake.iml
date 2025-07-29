@@ -11,8 +11,8 @@
     <orderEntry type="library" name="javafx-swt" level="project" />
     <orderEntry type="library" name="lib" level="project" />
     <orderEntry type="library" name="lib1" level="project" />
-    <orderEntry type="library" exported="" name="webcam-capture-0.3.12" level="project" />
-    <orderEntry type="module-library" exported="">
+    <orderEntry type="library" name="webcam-capture-0.3.12" level="project" />
+    <orderEntry type="module-library">
       <library>
         <CLASSES>
           <root url="jar://$MODULE_DIR$/webcam-capture-0.3.12.jar!/" />
@@ -34,7 +34,12 @@
           <root url="file://$MODULE_DIR$/src" />
         </SOURCES>
         <jarDirectory url="file://$MODULE_DIR$" recursive="false" />
+        <jarDirectory url="file://$MODULE_DIR$" recursive="false" />
       </library>
     </orderEntry>
+    <orderEntry type="library" name="lib2" level="project" />
+    <orderEntry type="library" name="slf4j-api-2.0.9" level="project" />
+    <orderEntry type="library" name="slf4j-simple-2.0.9" level="project" />
+    <orderEntry type="library" name="bridj-0.7.0" level="project" />
   </component>
 </module>
