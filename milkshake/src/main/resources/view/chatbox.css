@@ -180,3 +180,5 @@
 /********************************  UTILITIES  ******************************/
 .fadeIn { -fx-opacity: 0; }
 .fadeInAnimated { -fx-opacity: 1; -fx-transition: all 0.3s ease; }
+
+

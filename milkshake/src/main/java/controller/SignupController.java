@@ -65,6 +65,8 @@ public class SignupController {
             String resp = sendSignup(username,password);
             if("SUCCESS".equalsIgnoreCase(resp)){
                 User u=new User(username);
+
+                u.setPhotoPath(String.valueOf(getClass().getResource("/images/default.jpeg")));
                 Database.saveUser(u);
                 Session.setUser(u);
 

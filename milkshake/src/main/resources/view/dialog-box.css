@@ -1,0 +1,37 @@
+.dialog-root {
+    -fx-background-color: #2e2e2e;
+    -fx-padding: 15;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+}
+
+.label {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.text-field {
+    -fx-background-color: #444;
+    -fx-text-fill: #fff;
+    -fx-prompt-text-fill: #aaa;
+    -fx-background-radius: 6;
+    -fx-padding: 6 10;
+    -fx-border-color: #555;
+    -fx-border-radius: 6;
+}
+
+.check-box {
+    -fx-text-fill: #ddd;
+}
+
+.button {
+    -fx-background-color: #0e639c;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 6;
+}
+
+.button:hover {
+    -fx-background-color: #1177bb;
+}

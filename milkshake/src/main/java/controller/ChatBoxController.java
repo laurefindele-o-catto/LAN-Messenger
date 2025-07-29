@@ -11,10 +11,12 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.scene.shape.Circle;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.stage.FileChooser;
 import main.java.client.ClientConnection;
+import main.java.user.Database;
 import main.java.user.Session;
 import main.java.user.User;
 import main.java.util.sceneChange;
@@ -45,6 +47,7 @@ public class ChatBoxController implements Initializable, ClientConnection.Messag
 
     // Label that shows the current conversation name (friend or group)
     @FXML private Label chatTitleLabel;
+    @FXML private ImageView profileImageView;
 
     private User currentUser;
     private ClientConnection connection;
@@ -96,6 +99,8 @@ public class ChatBoxController implements Initializable, ClientConnection.Messag
         dialog.initModality(javafx.stage.Modality.APPLICATION_MODAL);
         javafx.scene.layout.VBox root = new javafx.scene.layout.VBox(10);
         root.setPadding(new Insets(10));
+        root.getStyleClass().add("dialog-root");
+
         Label nameLabel = new Label("Group Name:");
         TextField nameField = new TextField();
         nameField.setPromptText("Enter group name");
@@ -108,9 +113,12 @@ public class ChatBoxController implements Initializable, ClientConnection.Messag
         Button createBtn = new Button("Create");
         Button cancelBtn = new Button("Cancel");
         HBox buttonBar = new HBox(10, createBtn, cancelBtn);
+
         buttonBar.setAlignment(Pos.CENTER_RIGHT);
         root.getChildren().addAll(nameLabel, nameField, membersLabel, checkContainer, buttonBar);
         javafx.scene.Scene scene = new javafx.scene.Scene(root);
+
+        scene.getStylesheets().add(getClass().getResource("/view/dialog-box.css").toExternalForm());
         dialog.setScene(scene);
         createBtn.setOnAction(ev -> {
             String groupName = nameField.getText().trim();
@@ -145,6 +153,7 @@ public class ChatBoxController implements Initializable, ClientConnection.Messag
         if (chatTitleLabel != null) {
             chatTitleLabel.setText(conversation == null ? "" : conversation);
         }
+
         // Show or hide the "Members" button based on whether this is a group chat
         if (membersButton != null) {
             boolean isGroup = conversation != null && groups.contains(conversation);
@@ -159,6 +168,26 @@ public class ChatBoxController implements Initializable, ClientConnection.Messag
             }
         }
         scrollToBottom();
+
+        //show the image
+
+
+        File imgFile = new File("users/" + conversation + "/profile.jpg");
+        Image image;
+
+        if (imgFile.exists()) {
+            image = new Image(imgFile.toURI().toString(), false);
+            if (image.isError()) {
+                System.out.println("Error loading image: " + image.getException());
+            }
+        } else {
+            image = new Image(getClass().getResource("/images/default.jpeg").toString());
+        }
+
+        profileImageView.setImage(image);
+        double radius = Math.min(profileImageView.getFitWidth(), profileImageView.getFitHeight()) / 2;
+        Circle clip = new Circle(profileImageView.getFitWidth() / 2, profileImageView.getFitHeight() / 2, radius);
+        profileImageView.setClip(clip);
     }
 
     private void sendCurrentMessage() {

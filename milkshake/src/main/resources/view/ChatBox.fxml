@@ -17,6 +17,7 @@
 <?import java.net.URL?>
 <?import javafx.scene.control.Tooltip?>
 
+<?import javafx.scene.image.ImageView?>
 <BorderPane fx:controller="main.java.controller.ChatBoxController"
             xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
@@ -53,6 +54,9 @@
         <VBox spacing="10" style="-fx-background-color:#2b2b2b;-fx-padding:12;">
             <!-- Chat title area: shows the current friend or group name and a button to view members -->
             <HBox spacing="8" alignment="CENTER_LEFT">
+                <ImageView fx:id="profileImageView" fitWidth="36" fitHeight="36"
+                           preserveRatio="true"
+                           style="-fx-background-radius: 50%; -fx-effect: dropshadow(gaussian, black, 2, 0, 0, 1);" />
                 <Label fx:id="chatTitleLabel" text=""
                        style="-fx-text-fill:white; -fx-font-size:16; -fx-font-weight:bold;" />
                 <!-- Button to view group members (only meaningful for group chats) -->
