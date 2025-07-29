@@ -239,6 +239,22 @@ public class ClientConnection {
     }
 
     /**
+     * Sends a chunk of audio data to the specified user.  Audio frames should
+     * be encoded as a base64 string of raw PCM bytes (e.g., 16‑bit little
+     * endian mono samples).  This method is invoked repeatedly during an
+     * active call to stream microphone audio in near real‑time.
+     *
+     * @param to     the username of the remote party
+     * @param base64 the base64‑encoded PCM audio data
+     */
+    public void sendAudioFrame(String to, String base64) {
+        if (out != null && username != null && to != null && !to.isEmpty() && base64 != null) {
+            out.println("AUDIO_FRAME|" + username + "|" + to + "|" + base64);
+            out.flush();
+        }
+    }
+
+    /**
      * Listens on the socket for incoming lines and delegates them.
      * Runs in its own thread.
      */
@@ -367,6 +383,13 @@ public class ClientConnection {
                 String data = p[2];
                 for (MessageListener l : listeners) {
                     dispatchPool.submit(() -> l.onMessageReceived(sender, "VIDEO_FRAME|" + data));
+                }
+            } else if ("AUDIO_FRAME".equals(header) && p.length >= 3) {
+                // Forward audio frames to listeners so they can be routed to the video call controller.
+                String sender = p[1];
+                String data = p[2];
+                for (MessageListener l : listeners) {
+                    dispatchPool.submit(() -> l.onMessageReceived(sender, "AUDIO_FRAME|" + data));
                 }
             } else if ("END_CALL".equals(header) && p.length >= 2) {
                 String sender = p[1];

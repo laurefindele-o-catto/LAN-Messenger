@@ -131,6 +131,7 @@ public class ClientHandler implements Runnable {
                 case "VIDEO_CALL_RESPONSE": handleVideoCallResponse(pieces); break;
                 case "END_CALL": handleEndCall(pieces); break;
                 case "VIDEO_FRAME": handleVideoFrame(pieces); break;
+                case "AUDIO_FRAME": handleAudioFrame(pieces); break;
                 /* Unknown commands are ignored for now */
             }
         }
@@ -855,6 +856,27 @@ public class ClientHandler implements Runnable {
         PrintWriter targetOut = ONLINE_WRITERS.get(to);
         if (targetOut != null) {
             targetOut.println("VIDEO_FRAME|" + from + "|" + data);
+        }
+    }
+
+    /**
+     * Handles a chunk of audio data from a client.  The expected format is
+     * AUDIO_FRAME|from|to|data.  The audio is forwarded to the intended
+     * recipient if they are currently online.  Audio frames are base64
+     * encoded raw PCM bytes (e.g., 16‑bit little endian mono samples).
+     *
+     * @param p the split command array
+     */
+    private void handleAudioFrame(String[] p) {
+        if (p.length < 4) {
+            return;
+        }
+        String from = p[1];
+        String to = p[2];
+        String data = p[3];
+        PrintWriter targetOut = ONLINE_WRITERS.get(to);
+        if (targetOut != null) {
+            targetOut.println("AUDIO_FRAME|" + from + "|" + data);
         }
     }
 

@@ -601,6 +601,12 @@ public class ChatBoxController implements Initializable,
                 videoCallController.receiveVideoFrame(from, data);
                 return;
             }
+            // Incoming audio frame
+            if (body != null && body.startsWith("AUDIO_FRAME|")) {
+                String data = body.substring("AUDIO_FRAME|".length());
+                videoCallController.receiveAudioFrame(from, data);
+                return;
+            }
             // Video call request from remote user
             if ("VIDEO_CALL_REQUEST".equals(body)) {
                 videoCallController.receiveCallRequest(from);
