@@ -387,29 +387,47 @@ public class DashboardController implements UserInterface {
         }
     }
 
-    private void loadProfilePhoto() {
-        if (user.getPhotoPath() != null && !user.getPhotoPath().isEmpty()) {
-            File file = new File(user.getPhotoPath());
-            if (file.exists()) {
-                try {
-                    photo.setImage(new Image(file.toURI().toString()));
-                    double radius = Math.min(photo.getFitWidth(), photo.getFitHeight()) / 2;
-                    Circle clip = new Circle(
-                            photo.getFitWidth() / 2,
-                            photo.getFitHeight() / 2,
-                            radius
-                    );
-                    photo.setClip(clip);
-                } catch (Exception e) {
-                    System.err.println("Failed to load profile photo: " + e.getMessage());
-                }
-            } else {
-                System.err.println("Profile photo file does not exist at: " + user.getPhotoPath());
-            }
-        } else {
-            System.err.println("Photo path is null or empty for user: " + user.getUsername());
+//    private void loadProfilePhoto() {
+//        if (user.getPhotoPath() != null && !user.getPhotoPath().isEmpty()) {
+//            File file = new File(user.getPhotoPath());
+//            if (file.exists()) {
+//                try {
+//                    photo.setImage(new Image(file.toURI().toString()));
+//                    double radius = Math.min(photo.getFitWidth(), photo.getFitHeight()) / 2;
+//                    Circle clip = new Circle(
+//                            photo.getFitWidth() / 2,
+//                            photo.getFitHeight() / 2,
+//                            radius
+//                    );
+//                    photo.setClip(clip);
+//                } catch (Exception e) {
+//                    System.err.println("Failed to load profile photo: " + e.getMessage());
+//                }
+//            } else {
+//                System.err.println("Profile photo file does not exist at: " + user.getPhotoPath());
+//            }
+//        } else {
+//            System.err.println("Photo path is null or empty for user: " + user.getUsername());
+//        }
+//    }
+private void loadProfilePhoto() {
+    File imgFile = new File("users/" + user.getUsername() + "/profile.jpg");
+    Image image;
+
+    if (imgFile.exists()) {
+        image = new Image(imgFile.toURI().toString(), false);
+        if (image.isError()) {
+            System.out.println("Error loading image: " + image.getException());
         }
+    } else {
+        image = new Image(getClass().getResource("/images/default.jpeg").toString());
     }
+
+    photo.setImage(image);
+    double radius = Math.min(photo.getFitWidth(), photo.getFitHeight()) / 2;
+    Circle clip = new Circle(photo.getFitWidth() / 2, photo.getFitHeight() / 2, radius);
+    photo.setClip(clip);
+}
 
     private void performSearch(String query) {
         resultsBox.getChildren().clear();

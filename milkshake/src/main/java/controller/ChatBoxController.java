@@ -20,6 +20,8 @@ import main.java.client.ClientConnection;
 import main.java.user.Session;
 import main.java.user.User;
 import main.java.util.sceneChange;
+import main.java.user.Database;
+import javafx.scene.shape.Circle;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -52,6 +54,7 @@ public class ChatBoxController implements Initializable,
     @FXML private Button imageButton;
     @FXML private Button membersButton;
     @FXML private Label chatTitleLabel;
+    @FXML private ImageView profileImageView;
 
     private User currentUser;
     private ClientConnection connection;
@@ -114,16 +117,59 @@ public class ChatBoxController implements Initializable,
      * Opens a modal dialog allowing the user to create a new group.  The
      * current user's friends are listed with checkboxes to select members.
      */
+//    private void openGroupCreationDialog() {
+//        // Only allow group creation if user has at least one friend
+//        if (currentUser.getFriends() == null || currentUser.getFriends().isEmpty()) {
+//            return;
+//        }
+//        javafx.stage.Stage dialog = new javafx.stage.Stage();
+//        dialog.setTitle("Create Group");
+//        dialog.initModality(javafx.stage.Modality.APPLICATION_MODAL);
+//        VBox root = new VBox(10);
+//        root.setPadding(new Insets(10));
+//        Label nameLabel = new Label("Group Name:");
+//        TextField nameField = new TextField();
+//        nameField.setPromptText("Enter group name");
+//        Label membersLabel = new Label("Select members:");
+//        VBox checkContainer = new VBox(5);
+//        for (String f : currentUser.getFriends()) {
+//            CheckBox cb = new CheckBox(f);
+//            checkContainer.getChildren().add(cb);
+//        }
+//        Button createBtn = new Button("Create");
+//        Button cancelBtn = new Button("Cancel");
+//        HBox buttonBar = new HBox(10, createBtn, cancelBtn);
+//        buttonBar.setAlignment(Pos.CENTER_RIGHT);
+//        root.getChildren().addAll(nameLabel, nameField, membersLabel, checkContainer, buttonBar);
+//        javafx.scene.Scene scene = new javafx.scene.Scene(root);
+//        dialog.setScene(scene);
+//        createBtn.setOnAction(ev -> {
+//            String groupName = nameField.getText().trim();
+//            if (groupName.isEmpty()) return;
+//            List<String> selected = new ArrayList<>();
+//            for (javafx.scene.Node n : checkContainer.getChildren()) {
+//                if (n instanceof CheckBox cb && cb.isSelected()) {
+//                    selected.add(cb.getText());
+//                }
+//            }
+//            if (selected.isEmpty()) return;
+//            connection.createGroup(groupName, selected);
+//            dialog.close();
+//        });
+//        cancelBtn.setOnAction(ev -> dialog.close());
+//        dialog.showAndWait();
+//    }
     private void openGroupCreationDialog() {
-        // Only allow group creation if user has at least one friend
         if (currentUser.getFriends() == null || currentUser.getFriends().isEmpty()) {
             return;
         }
         javafx.stage.Stage dialog = new javafx.stage.Stage();
         dialog.setTitle("Create Group");
         dialog.initModality(javafx.stage.Modality.APPLICATION_MODAL);
-        VBox root = new VBox(10);
+        javafx.scene.layout.VBox root = new javafx.scene.layout.VBox(10);
         root.setPadding(new Insets(10));
+        root.getStyleClass().add("dialog-root");
+
         Label nameLabel = new Label("Group Name:");
         TextField nameField = new TextField();
         nameField.setPromptText("Enter group name");
@@ -136,9 +182,12 @@ public class ChatBoxController implements Initializable,
         Button createBtn = new Button("Create");
         Button cancelBtn = new Button("Cancel");
         HBox buttonBar = new HBox(10, createBtn, cancelBtn);
+
         buttonBar.setAlignment(Pos.CENTER_RIGHT);
         root.getChildren().addAll(nameLabel, nameField, membersLabel, checkContainer, buttonBar);
         javafx.scene.Scene scene = new javafx.scene.Scene(root);
+
+        scene.getStylesheets().add(getClass().getResource("/view/dialog-box.css").toExternalForm());
         dialog.setScene(scene);
         createBtn.setOnAction(ev -> {
             String groupName = nameField.getText().trim();
@@ -198,6 +247,25 @@ public class ChatBoxController implements Initializable,
             }
         }
         scrollToBottom();
+        //show the image
+
+
+        File imgFile = new File("users/" + conversation + "/profile.jpg");
+        Image image;
+
+        if (imgFile.exists()) {
+            image = new Image(imgFile.toURI().toString(), false);
+            if (image.isError()) {
+                System.out.println("Error loading image: " + image.getException());
+            }
+        } else {
+            image = new Image(getClass().getResource("/images/default.jpeg").toString());
+        }
+
+        profileImageView.setImage(image);
+        double radius = Math.min(profileImageView.getFitWidth(), profileImageView.getFitHeight()) / 2;
+        Circle clip = new Circle(profileImageView.getFitWidth() / 2, profileImageView.getFitHeight() / 2, radius);
+        profileImageView.setClip(clip);
     }
 
     /**

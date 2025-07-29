@@ -17,6 +17,7 @@
 <?import java.net.URL?>
 <?import javafx.scene.control.Tooltip?>
 
+<?import javafx.scene.image.ImageView?>
 <BorderPane fx:controller="main.java.controller.ChatBoxController"
             xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
@@ -53,6 +54,9 @@
         <VBox spacing="10" style="-fx-background-color:#2b2b2b;-fx-padding:12;">
             <!-- Chat title area: shows the current friend or group name and a button to view members -->
             <HBox spacing="8" alignment="CENTER_LEFT">
+                <ImageView fx:id="profileImageView" fitWidth="36" fitHeight="36"
+                           preserveRatio="true"
+                           style="-fx-background-radius: 50%; -fx-effect: dropshadow(gaussian, black, 2, 0, 0, 1);" />
                 <Label fx:id="chatTitleLabel" text=""
                        style="-fx-text-fill:white; -fx-font-size:16; -fx-font-weight:bold;" />
                 <!-- Button to view group members (only meaningful for group chats) -->
@@ -99,3 +103,110 @@
         </VBox>
     </center>
 </BorderPane>
+
+
+
+
+
+
+<!--<?xml version="1.0" encoding="UTF-8"?>-->
+
+<!--&lt;!&ndash;-->
+<!--    ChatBox.fxml-->
+
+<!--    Defines the chat window UI using a BorderPane.  The left sidebar-->
+<!--    lists friends and groups, and the center area shows the chat history-->
+<!--    along with a message composer.  An image attachment button (paper clip)-->
+<!--    is included next to the message field to allow sending images.-->
+<!--    NEW: A chatTitleLabel and Members button at the top to display-->
+<!--    the current conversation name and to view group members.-->
+<!--&ndash;&gt;-->
+
+<!--<?import javafx.scene.control.*?>-->
+<!--<?import javafx.scene.layout.*?>-->
+<!--<?import javafx.geometry.*?>-->
+<!--<?import java.net.URL?>-->
+<!--<?import javafx.scene.control.Tooltip?>-->
+
+<!--<BorderPane fx:controller="main.java.controller.ChatBoxController"-->
+<!--            xmlns="http://javafx.com/javafx"-->
+<!--            xmlns:fx="http://javafx.com/fxml"-->
+<!--            prefWidth="800" prefHeight="600">-->
+
+<!--    &lt;!&ndash; External stylesheet for custom theming &ndash;&gt;-->
+<!--    <stylesheets>-->
+<!--        <URL value="@chatbox.css" />-->
+<!--    </stylesheets>-->
+
+<!--    &lt;!&ndash; ======================= LEFT SIDEBAR ======================= &ndash;&gt;-->
+<!--    <left>-->
+<!--        <VBox spacing="10" prefWidth="220"-->
+<!--              style="-fx-background-color:#1e1e1e;-fx-padding:12;">-->
+<!--            &lt;!&ndash; Title and group creation button &ndash;&gt;-->
+<!--            <HBox spacing="8" alignment="CENTER_LEFT">-->
+<!--                <Label text="Friends"-->
+<!--                       style="-fx-text-fill:white;-fx-font-size:16; -fx-font-weight:bold;" />-->
+<!--                <Button fx:id="createGroupButton" text="+" maxHeight="Infinity" maxWidth="Infinity"-->
+<!--                        style="-fx-background-color:transparent; -fx-text-fill:#ddd; -fx-font-size:16;" />-->
+<!--            </HBox>-->
+
+<!--            &lt;!&ndash; Friends / group list &ndash;&gt;-->
+<!--            <ListView fx:id="friendListView" VBox.vgrow="ALWAYS" />-->
+
+<!--            &lt;!&ndash; Back navigation button &ndash;&gt;-->
+<!--            <Button fx:id="backButton" text="Back" maxWidth="Infinity"-->
+<!--                    style="-fx-background-color:transparent; -fx-border-color:#888; -fx-text-fill:#ddd;" />-->
+<!--        </VBox>-->
+<!--    </left>-->
+
+<!--    &lt;!&ndash; ===================== CENTER CHAT AREA ===================== &ndash;&gt;-->
+<!--    <center>-->
+<!--        <VBox spacing="10" style="-fx-background-color:#2b2b2b;-fx-padding:12;">-->
+<!--            &lt;!&ndash; Chat title area: shows the current friend or group name and a button to view members &ndash;&gt;-->
+<!--            <HBox spacing="8" alignment="CENTER_LEFT">-->
+<!--                <Label fx:id="chatTitleLabel" text=""-->
+<!--                       style="-fx-text-fill:white; -fx-font-size:16; -fx-font-weight:bold;" />-->
+<!--                &lt;!&ndash; Button to view group members (only meaningful for group chats) &ndash;&gt;-->
+<!--                <Button fx:id="membersButton"-->
+<!--                        text="Members"-->
+<!--                        style="-fx-background-color:transparent; -fx-text-fill:#ddd; -fx-font-size:12;">-->
+<!--                    <tooltip>-->
+<!--                        <Tooltip text="Show group members" />-->
+<!--                    </tooltip>-->
+<!--                </Button>-->
+<!--            </HBox>-->
+
+<!--            &lt;!&ndash; Scrollable conversation history &ndash;&gt;-->
+<!--            <ScrollPane fx:id="chatScrollPane" fitToWidth="true" fitToHeight="true"-->
+<!--                        hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS"-->
+<!--                        style="-fx-background-color:transparent;">-->
+<!--                <content>-->
+<!--                    <VBox fx:id="chatMessagesBox" spacing="8" />-->
+<!--                </content>-->
+<!--            </ScrollPane>-->
+
+<!--            &lt;!&ndash; Composer: image attach button, message field, send button &ndash;&gt;-->
+<!--            <HBox spacing="8">-->
+<!--                &lt;!&ndash; Image attachment button with proper Tooltip definition &ndash;&gt;-->
+<!--                <Button fx:id="imageButton"-->
+<!--                        text="📎"-->
+<!--                        maxHeight="Infinity" maxWidth="Infinity"-->
+<!--                        style="-fx-background-color:transparent; -fx-text-fill:#ddd; -fx-font-size:14;">-->
+<!--                    <tooltip>-->
+<!--                        <Tooltip text="Attach Image" />-->
+<!--                    </tooltip>-->
+<!--                </Button>-->
+
+<!--                &lt;!&ndash; Text input &ndash;&gt;-->
+<!--                <TextField fx:id="messageField"-->
+<!--                           promptText="Type a message…"-->
+<!--                           HBox.hgrow="ALWAYS"-->
+<!--                           style="-fx-background-color:#3c3f41;-fx-text-fill:#ddd;-fx-prompt-text-fill:#888;" />-->
+
+<!--                &lt;!&ndash; Send button &ndash;&gt;-->
+<!--                <Button fx:id="sendButton" text="Send" defaultButton="true"-->
+<!--                        style="-fx-background-color:#0e639c;-fx-text-fill:white;" />-->
+<!--            </HBox>-->
+<!--        </VBox>-->
+<!--    </center>-->
+<!--</BorderPane>-->
