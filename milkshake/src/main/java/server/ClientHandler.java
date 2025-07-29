@@ -914,6 +914,32 @@ public class ClientHandler implements Runnable {
         }
     }
 
+//    private void handleAcceptRequest(String[] p) {
+//        /* ACCEPT_REQUEST|user|from */
+//        if (p.length < 3) {
+//            return;
+//        }
+//
+//        String user = p[1];
+//        String from = p[2];
+//
+//        User u1 = Database.loadUser(user);
+//        User u2 = Database.loadUser(from);
+//
+//        if (u1 == null || u2 == null) {
+//            return;
+//        }
+//
+//        u1.acceptFriendRequest(u2);
+//        Database.saveUser(u1);
+//        Database.saveUser(u2);
+//
+//        PrintWriter pw = ONLINE_WRITERS.get(from);
+//        if (pw != null) {
+//            pw.println("ACCEPTED_REQUEST_FROM|" + user);
+//        }
+//    }
+
     private void handleAcceptRequest(String[] p) {
         /* ACCEPT_REQUEST|user|from */
         if (p.length < 3) {
@@ -934,11 +960,19 @@ public class ClientHandler implements Runnable {
         Database.saveUser(u1);
         Database.saveUser(u2);
 
-        PrintWriter pw = ONLINE_WRITERS.get(from);
-        if (pw != null) {
-            pw.println("ACCEPTED_REQUEST_FROM|" + user);
+        // Notify the original requester that their friend request was accepted
+        PrintWriter pwFrom = ONLINE_WRITERS.get(from);
+        if (pwFrom != null) {
+            pwFrom.println("ACCEPTED_REQUEST_FROM|" + user);
+        }
+
+        // Also notify the acceptor so their client can update immediately
+        PrintWriter pwUser = ONLINE_WRITERS.get(user);
+        if (pwUser != null) {
+            pwUser.println("ACCEPTED_REQUEST_FROM|" + from);
         }
     }
+
 
     private void handleDeclineRequest(String[] p) {
         /* DECLINE_REQUEST|user|from */

@@ -107,7 +107,7 @@ public class LoginController {
     @FXML private Label         errorLabel;
 
     private static final String HOST = "localhost";
-    private static final int    PORT = 12345;
+    private static final int    PORT = 12346;
 
     public void initialize() {
         backBtn.setOnAction(e -> sceneChange.changeScene("Welcome.fxml", backBtn));
