@@ -127,6 +127,10 @@ public class ClientHandler implements Runnable {
                 case "ACCEPT_REQUEST":handleAcceptRequest(pieces); break;
                 case "DECLINE_REQUEST":handleDeclineRequest(pieces);break;
                 case "UPLOAD_PROFILE_PHOTO": handleUploadProfilePhoto(pieces); break;
+                case "VIDEO_CALL_REQUEST": handleVideoCallRequest(pieces); break;
+                case "VIDEO_CALL_RESPONSE": handleVideoCallResponse(pieces); break;
+                case "END_CALL": handleEndCall(pieces); break;
+                case "VIDEO_FRAME": handleVideoFrame(pieces); break;
                 /* Unknown commands are ignored for now */
             }
         }
@@ -147,7 +151,7 @@ public class ClientHandler implements Runnable {
         sendChatHistory(username, out);
     }
 
-//    private void handleLogout(String[] p) {
+    //    private void handleLogout(String[] p) {
 //        /* Expected: LOGOUT|username */
 //        if (p.length < 2) {
 //            return;
@@ -156,17 +160,17 @@ public class ClientHandler implements Runnable {
 //        ONLINE_WRITERS.remove(user);
 //        System.out.println(user + " has logged out.");
 //    }
-private void handleLogout(String[] p) {
-    String user = p[1];
-    ONLINE_WRITERS.remove(user);
-    System.out.println(user + " has logged out.");
-    if (user.equals(this.username)) {
-        this.username = null;
+    private void handleLogout(String[] p) {
+        String user = p[1];
+        ONLINE_WRITERS.remove(user);
+        System.out.println(user + " has logged out.");
+        if (user.equals(this.username)) {
+            this.username = null;
+        }
+        if (out != null) {
+            out.println("LOGOUT_OK");
+        }
     }
-    if (out != null) {
-        out.println("LOGOUT_OK");
-    }
-}
 
 
     private void handleSignup(String[] p) {
@@ -779,6 +783,78 @@ private void handleLogout(String[] p) {
             System.out.println("Saved profile photo for user: " + username);
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * Handles an incoming video call request.  The expected format is
+     * VIDEO_CALL_REQUEST|caller|callee.  If the callee is currently online,
+     * the request is forwarded to them.  Otherwise the request is ignored.
+     */
+    private void handleVideoCallRequest(String[] p) {
+        if (p.length < 3) {
+            return;
+        }
+        String caller = p[1];
+        String callee = p[2];
+        // Forward the request to the callee if online
+        PrintWriter targetOut = ONLINE_WRITERS.get(callee);
+        if (targetOut != null) {
+            targetOut.println("VIDEO_CALL_REQUEST|" + caller);
+        }
+    }
+
+    /**
+     * Handles a response to a video call request.  Expected format:
+     * VIDEO_CALL_RESPONSE|responder|to|answer, where answer is "yes" or
+     * "no".  The response is forwarded to the original caller if online.
+     */
+    private void handleVideoCallResponse(String[] p) {
+        if (p.length < 4) {
+            return;
+        }
+        String responder = p[1];
+        String to = p[2];
+        String answer = p[3];
+        PrintWriter targetOut = ONLINE_WRITERS.get(to);
+        if (targetOut != null) {
+            targetOut.println("VIDEO_CALL_RESPONSE|" + responder + "|" + answer);
+        }
+    }
+
+    /**
+     * Handles a request to end an ongoing video call.  Expected format:
+     * END_CALL|from|to.  The termination is forwarded to the other user
+     * if they are online.
+     */
+    private void handleEndCall(String[] p) {
+        if (p.length < 3) {
+            return;
+        }
+        String from = p[1];
+        String to = p[2];
+        PrintWriter targetOut = ONLINE_WRITERS.get(to);
+        if (targetOut != null) {
+            targetOut.println("END_CALL|" + from);
+        }
+    }
+
+    /**
+     * Handles a video frame from a client.  The expected format is
+     * VIDEO_FRAME|from|to|data.  The frame is forwarded to the intended
+     * recipient if they are currently online.  Frames are encoded as
+     * base64 JPEG strings.
+     */
+    private void handleVideoFrame(String[] p) {
+        if (p.length < 4) {
+            return;
+        }
+        String from = p[1];
+        String to = p[2];
+        String data = p[3];
+        PrintWriter targetOut = ONLINE_WRITERS.get(to);
+        if (targetOut != null) {
+            targetOut.println("VIDEO_FRAME|" + from + "|" + data);
         }
     }
 

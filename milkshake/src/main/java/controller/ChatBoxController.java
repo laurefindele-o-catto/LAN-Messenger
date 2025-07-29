@@ -16,12 +16,32 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+// Removed unused imports for shapes and colours as video UI is handled by VideoCallController
+// import javafx.scene.shape.Rectangle;
+// import javafx.scene.paint.Color;
 import main.java.client.ClientConnection;
 import main.java.user.Session;
 import main.java.user.User;
 import main.java.util.sceneChange;
 import main.java.user.Database;
 import javafx.scene.shape.Circle;
+
+// Additional imports for video streaming support
+// Removed webcam and executor imports as video calls are now delegated to VideoCallController.
+// import java.util.concurrent.ScheduledExecutorService;
+// import java.util.concurrent.Executors;
+// import java.util.concurrent.TimeUnit;
+// import java.awt.image.BufferedImage;
+// import java.awt.Dimension;
+// import java.io.ByteArrayOutputStream;
+// import javax.imageio.ImageIO;
+import java.util.Base64;
+// import com.github.sarxos.webcam.Webcam;
+// import javafx.embed.swing.SwingFXUtils;
+
+// Import VideoCallController to delegate video call functionality
+import main.java.controller.VideoCallController;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -53,6 +73,7 @@ public class ChatBoxController implements Initializable,
     @FXML private Button createGroupButton;
     @FXML private Button imageButton;
     @FXML private Button membersButton;
+    @FXML private Button videoCallButton;
     @FXML private Label chatTitleLabel;
     @FXML private ImageView profileImageView;
 
@@ -72,6 +93,12 @@ public class ChatBoxController implements Initializable,
             DateTimeFormatter.ofPattern("HH:mm");
 
     /**
+     * Video call controller that manages call lifecycle and frame handling.
+     * This keeps the chat controller focused on messaging and friend logic.
+     */
+    private VideoCallController videoCallController;
+
+    /**
      * Initialize the chat box.  Registers the controller as a message and
      * friend listener, requests chat and group history, populates the friend
      * list, and wires up button handlers.
@@ -83,6 +110,10 @@ public class ChatBoxController implements Initializable,
         currentUser = Session.getCurrentUser();
         connection.registerListener(this);
         connection.registerFriendListener(this);
+
+        // Instantiate the video call controller after obtaining the current user.  The
+        // controller will manage all call related state and communication.
+        videoCallController = new VideoCallController(connection, currentUser.getUsername());
         // Request initial histories
         connection.requestChatHistory(currentUser.getUsername());
         connection.requestGroupList();
@@ -110,6 +141,11 @@ public class ChatBoxController implements Initializable,
         // Show group members for the currently selected group
         if (membersButton != null) {
             membersButton.setOnAction(e -> showGroupMembers());
+        }
+
+        // Initiate a video call on click (only valid for private chats)
+        if (videoCallButton != null) {
+            videoCallButton.setOnAction(e -> initiateVideoCall());
         }
     }
 
@@ -196,6 +232,13 @@ public class ChatBoxController implements Initializable,
             boolean isGroup = conversation != null && groups.contains(conversation);
             membersButton.setVisible(isGroup);
         }
+
+        // Show or hide the video call button for one‑to‑one chats
+        if (videoCallButton != null) {
+            boolean isGroup = conversation != null && groups.contains(conversation);
+            // Only show when a conversation is selected and it is not a group
+            videoCallButton.setVisible(conversation != null && !isGroup);
+        }
         // Clear existing messages and render the conversation history
         chatMessagesBox.getChildren().clear();
         if (conversation == null) return;
@@ -248,6 +291,68 @@ public class ChatBoxController implements Initializable,
             connection.sendPrivateMessage(conversation, text, ts);
         }
         messageField.clear();
+    }
+
+    /**
+     * Initiates a video call to the currently selected friend.  Only allowed
+     * when not in an ongoing call and the selected conversation is a private
+     * chat.  Sends a request to the remote user via the server and opens the
+     * caller’s video call window after the remote party accepts.
+     */
+    private void initiateVideoCall() {
+        String conversation = friendListView.getSelectionModel().getSelectedItem();
+        // Only allow calls to friends (not groups)
+        if (conversation == null || groups.contains(conversation)) {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("Video Call");
+            alert.setHeaderText(null);
+            alert.setContentText("Video calls are only available in one‑to‑one chats.");
+            alert.showAndWait();
+            return;
+        }
+        // Delegate call initiation to the video call controller.  It will handle
+        // sending the request and notifying the user of call status.
+        videoCallController.initiateCall(conversation);
+    }
+
+    /**
+     * Displays a simple video call window.  For this prototype, the window
+     * contains placeholder content indicating the call state.  When the user
+     * closes the window or clicks the end call button, an END_CALL message
+     * is sent to the remote peer and the call is terminated.
+     *
+     * @param withUser the username of the other participant
+     * @param incoming true if this call was initiated by the other user
+     */
+    private void openVideoCallWindow(String withUser, boolean incoming) {
+        // Deprecated: this implementation has been moved to VideoCallController
+    }
+
+    /**
+     * Closes the current video call window and resets the call state.
+     */
+    private void closeVideoCallWindow() {
+        // Deprecated: functionality moved to VideoCallController
+    }
+
+    /**
+     * Starts capturing webcam frames and sending them to the remote user.
+     * This method initialises the webcam (if available), sets up a scheduled
+     * executor to grab frames at ~10 FPS, updates the local feed view, and
+     * transmits the frames encoded as base64 strings over the network.
+     *
+     * @param withUser the username of the remote user in this call
+     */
+    private void startVideoCapture(String withUser) {
+        // Deprecated: functionality moved to VideoCallController
+    }
+
+    /**
+     * Stops the webcam capture service and releases resources.  Called when
+     * the call ends or the window is closed.
+     */
+    private void stopVideoCapture() {
+        // Deprecated: functionality moved to VideoCallController
     }
 
     /**
@@ -428,6 +533,31 @@ public class ChatBoxController implements Initializable,
     }
 
     /**
+     * Rebuilds the map of group members based on the current chat history.
+     * This method iterates over all known groups and extracts unique
+     * senders from each group's message history.  The current user is
+     * always included in the membership.  Invoking this after new group
+     * messages or histories ensures the group member list is accurate
+     * across sessions.
+     */
+    private void rebuildGroupMembers() {
+        groupMembersMap.clear();
+        for (String groupName : groups) {
+            List<Message> msgs = chatHistory.get(groupName);
+            if (msgs == null) continue;
+            java.util.LinkedHashSet<String> senders = new java.util.LinkedHashSet<>();
+            for (Message m : msgs) {
+                if (m.getSender() != null && !m.getSender().isEmpty()) {
+                    senders.add(m.getSender());
+                }
+            }
+            // Ensure the current user is included
+            senders.add(currentUser.getUsername());
+            groupMembersMap.put(groupName, new java.util.ArrayList<>(senders));
+        }
+    }
+
+    /**
      * Invoked when a message is received from the server.  Delegates to
      * {@link #handleIncomingMessage(String, String)} on the JavaFX thread.
      */
@@ -478,6 +608,31 @@ public class ChatBoxController implements Initializable,
      */
     private void handleIncomingMessage(String from, String body) {
         try {
+            // Delegate all video call related messages to the video call controller
+            // Incoming video frame
+            if (body != null && body.startsWith("VIDEO_FRAME|")) {
+                String data = body.substring("VIDEO_FRAME|".length());
+                videoCallController.receiveVideoFrame(from, data);
+                return;
+            }
+            // Video call request from remote user
+            if ("VIDEO_CALL_REQUEST".equals(body)) {
+                videoCallController.receiveCallRequest(from);
+                return;
+            }
+            // Response to a previously sent video call request
+            if (body != null && body.startsWith("VIDEO_CALL_RESPONSE|")) {
+                String[] parts = body.split("\\|", 2);
+                String accepted = parts.length >= 2 ? parts[1] : "no";
+                boolean accept = "yes".equalsIgnoreCase(accepted);
+                videoCallController.handleCallResponse(from, accept);
+                return;
+            }
+            // Remote party ended the call
+            if ("END_CALL".equals(body)) {
+                videoCallController.handleCallEnd(from);
+                return;
+            }
             if (body.startsWith("CHAT_HISTORY|")) {
                 String[] parts = body.split("\\|", 4);
                 if (parts.length == 4) {
@@ -532,6 +687,8 @@ public class ChatBoxController implements Initializable,
                         senders.add(currentUser.getUsername());
                         groupMembersMap.put(groupName, new ArrayList<>(senders));
                     }
+                    // After updating group histories, rebuild member lists to ensure they persist
+                    rebuildGroupMembers();
                 }
                 return;
             }
@@ -583,6 +740,8 @@ public class ChatBoxController implements Initializable,
                             memberList.add(currentUser.getUsername());
                         }
                         groupMembersMap.put(groupName, memberList);
+                        // Ensure our cache of group members is updated for all groups
+                        rebuildGroupMembers();
                     }
                 }
                 return;
@@ -597,6 +756,8 @@ public class ChatBoxController implements Initializable,
                     String groupName = from;
                     Message m = new Message(sender, groupName, text, ts);
                     appendAndRender(m);
+                    // Rebuild group members after receiving a new group message, just in case
+                    rebuildGroupMembers();
                 }
                 return;
             }
@@ -675,5 +836,10 @@ public class ChatBoxController implements Initializable,
     public void shutdown() {
         connection.removeListener(this);
         connection.removeFriendListener(this);
+        // Ensure any ongoing call is terminated when the controller shuts down.  Delegate to the
+        // video call controller so it can clean up resources and notify the remote party.
+        if (videoCallController != null) {
+            videoCallController.endCall();
+        }
     }
 }

@@ -182,6 +182,62 @@ public class ClientConnection {
     }
 
     /**
+     * Sends a video call request to the specified user.  The server will
+     * forward this request to the recipient if they are currently online.
+     *
+     * @param to the username of the user to call
+     */
+    public void sendVideoCallRequest(String to) {
+        if (out != null && username != null && to != null && !to.isEmpty()) {
+            out.println("VIDEO_CALL_REQUEST|" + username + "|" + to);
+            out.flush();
+        }
+    }
+
+    /**
+     * Sends a response to a pending video call request.  This is invoked
+     * when a user accepts or declines an incoming call.  The server will
+     * relay the response to the original caller.
+     *
+     * @param to      the username of the caller
+     * @param accept  true to accept the call, false to decline
+     */
+    public void sendVideoCallResponse(String to, boolean accept) {
+        if (out != null && username != null && to != null && !to.isEmpty()) {
+            String answer = accept ? "yes" : "no";
+            out.println("VIDEO_CALL_RESPONSE|" + username + "|" + to + "|" + answer);
+            out.flush();
+        }
+    }
+
+    /**
+     * Sends a message indicating that the current video call has ended.
+     *
+     * @param to the username of the other participant
+     */
+    public void sendEndCall(String to) {
+        if (out != null && username != null && to != null && !to.isEmpty()) {
+            out.println("END_CALL|" + username + "|" + to);
+            out.flush();
+        }
+    }
+
+    /**
+     * Sends a single video frame to the specified user.  The frame should be
+     * encoded as a base64 string (e.g., JPEG bytes).  This method is used
+     * during an active video call to stream live video.
+     *
+     * @param to     the username of the remote party
+     * @param base64 the base64‑encoded JPEG frame
+     */
+    public void sendVideoFrame(String to, String base64) {
+        if (out != null && username != null && to != null && !to.isEmpty() && base64 != null) {
+            out.println("VIDEO_FRAME|" + username + "|" + to + "|" + base64);
+            out.flush();
+        }
+    }
+
+    /**
      * Listens on the socket for incoming lines and delegates them.
      * Runs in its own thread.
      */
@@ -293,10 +349,35 @@ public class ClientConnection {
                 }
             }
         } else {
-            // Unknown header: pass the whole message through
-            String from = p.length > 1 ? p[1] : "";
-            for (MessageListener l : listeners) {
-                dispatchPool.submit(() -> l.onMessageReceived(from, line));
+            // Unknown header: check for video call commands
+            if ("VIDEO_CALL_REQUEST".equals(header) && p.length >= 2) {
+                String caller = p[1];
+                for (MessageListener l : listeners) {
+                    dispatchPool.submit(() -> l.onMessageReceived(caller, "VIDEO_CALL_REQUEST"));
+                }
+            } else if ("VIDEO_CALL_RESPONSE".equals(header) && p.length >= 3) {
+                String responder = p[1];
+                String answer = p[2];
+                for (MessageListener l : listeners) {
+                    dispatchPool.submit(() -> l.onMessageReceived(responder, "VIDEO_CALL_RESPONSE|" + answer));
+                }
+            } else if ("VIDEO_FRAME".equals(header) && p.length >= 3) {
+                String sender = p[1];
+                String data = p[2];
+                for (MessageListener l : listeners) {
+                    dispatchPool.submit(() -> l.onMessageReceived(sender, "VIDEO_FRAME|" + data));
+                }
+            } else if ("END_CALL".equals(header) && p.length >= 2) {
+                String sender = p[1];
+                for (MessageListener l : listeners) {
+                    dispatchPool.submit(() -> l.onMessageReceived(sender, "END_CALL"));
+                }
+            } else {
+                // Unknown header: pass the whole message through
+                String from = p.length > 1 ? p[1] : "";
+                for (MessageListener l : listeners) {
+                    dispatchPool.submit(() -> l.onMessageReceived(from, line));
+                }
             }
         }
     }
