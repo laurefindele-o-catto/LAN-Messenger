@@ -117,48 +117,7 @@ public class ChatBoxController implements Initializable,
      * Opens a modal dialog allowing the user to create a new group.  The
      * current user's friends are listed with checkboxes to select members.
      */
-//    private void openGroupCreationDialog() {
-//        // Only allow group creation if user has at least one friend
-//        if (currentUser.getFriends() == null || currentUser.getFriends().isEmpty()) {
-//            return;
-//        }
-//        javafx.stage.Stage dialog = new javafx.stage.Stage();
-//        dialog.setTitle("Create Group");
-//        dialog.initModality(javafx.stage.Modality.APPLICATION_MODAL);
-//        VBox root = new VBox(10);
-//        root.setPadding(new Insets(10));
-//        Label nameLabel = new Label("Group Name:");
-//        TextField nameField = new TextField();
-//        nameField.setPromptText("Enter group name");
-//        Label membersLabel = new Label("Select members:");
-//        VBox checkContainer = new VBox(5);
-//        for (String f : currentUser.getFriends()) {
-//            CheckBox cb = new CheckBox(f);
-//            checkContainer.getChildren().add(cb);
-//        }
-//        Button createBtn = new Button("Create");
-//        Button cancelBtn = new Button("Cancel");
-//        HBox buttonBar = new HBox(10, createBtn, cancelBtn);
-//        buttonBar.setAlignment(Pos.CENTER_RIGHT);
-//        root.getChildren().addAll(nameLabel, nameField, membersLabel, checkContainer, buttonBar);
-//        javafx.scene.Scene scene = new javafx.scene.Scene(root);
-//        dialog.setScene(scene);
-//        createBtn.setOnAction(ev -> {
-//            String groupName = nameField.getText().trim();
-//            if (groupName.isEmpty()) return;
-//            List<String> selected = new ArrayList<>();
-//            for (javafx.scene.Node n : checkContainer.getChildren()) {
-//                if (n instanceof CheckBox cb && cb.isSelected()) {
-//                    selected.add(cb.getText());
-//                }
-//            }
-//            if (selected.isEmpty()) return;
-//            connection.createGroup(groupName, selected);
-//            dialog.close();
-//        });
-//        cancelBtn.setOnAction(ev -> dialog.close());
-//        dialog.showAndWait();
-//    }
+
     private void openGroupCreationDialog() {
         if (currentUser.getFriends() == null || currentUser.getFriends().isEmpty()) {
             return;
