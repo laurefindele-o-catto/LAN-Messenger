@@ -17,9 +17,7 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-// Removed unused imports for shapes and colours as video UI is handled by VideoCallController
-// import javafx.scene.shape.Rectangle;
-// import javafx.scene.paint.Color;
+
 import main.java.client.ClientConnection;
 import main.java.user.Session;
 import main.java.user.User;
@@ -27,20 +25,8 @@ import main.java.util.sceneChange;
 import main.java.user.Database;
 import javafx.scene.shape.Circle;
 
-// Additional imports for video streaming support
-// Removed webcam and executor imports as video calls are now delegated to VideoCallController.
-// import java.util.concurrent.ScheduledExecutorService;
-// import java.util.concurrent.Executors;
-// import java.util.concurrent.TimeUnit;
-// import java.awt.image.BufferedImage;
-// import java.awt.Dimension;
-// import java.io.ByteArrayOutputStream;
-// import javax.imageio.ImageIO;
 import java.util.Base64;
-// import com.github.sarxos.webcam.Webcam;
-// import javafx.embed.swing.SwingFXUtils;
 
-// Import VideoCallController to delegate video call functionality
 import main.java.controller.VideoCallController;
 
 import java.io.ByteArrayInputStream;
@@ -843,3 +829,8 @@ public class ChatBoxController implements Initializable,
         }
     }
 }
+
+
+
+
+

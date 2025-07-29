@@ -69,6 +69,7 @@ public class ClientConnection {
                     case "ACCEPTED_REQUEST_FROM" -> l.onFriendRequestAccepted(from);
                     case "DECLINED_REQUEST_FROM" -> l.onFriendRequestDeclined(from);
                     case "GOT_FRIEND_REQUEST_FROM" -> l.onFriendRequestReceived(from);
+
                 }
             });
         }
