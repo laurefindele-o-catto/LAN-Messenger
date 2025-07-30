@@ -301,51 +301,6 @@ public class ChatBoxController implements Initializable,
         videoCallController.initiateCall(conversation);
     }
 
-    /**
-     * Displays a simple video call window.  For this prototype, the window
-     * contains placeholder content indicating the call state.  When the user
-     * closes the window or clicks the end call button, an END_CALL message
-     * is sent to the remote peer and the call is terminated.
-     *
-     * @param withUser the username of the other participant
-     * @param incoming true if this call was initiated by the other user
-     */
-    private void openVideoCallWindow(String withUser, boolean incoming) {
-        // Deprecated: this implementation has been moved to VideoCallController
-    }
-
-    /**
-     * Closes the current video call window and resets the call state.
-     */
-    private void closeVideoCallWindow() {
-        // Deprecated: functionality moved to VideoCallController
-    }
-
-    /**
-     * Starts capturing webcam frames and sending them to the remote user.
-     * This method initialises the webcam (if available), sets up a scheduled
-     * executor to grab frames at ~10 FPS, updates the local feed view, and
-     * transmits the frames encoded as base64 strings over the network.
-     *
-     * @param withUser the username of the remote user in this call
-     */
-    private void startVideoCapture(String withUser) {
-        // Deprecated: functionality moved to VideoCallController
-    }
-
-    /**
-     * Stops the webcam capture service and releases resources.  Called when
-     * the call ends or the window is closed.
-     */
-    private void stopVideoCapture() {
-        // Deprecated: functionality moved to VideoCallController
-    }
-
-    /**
-     * Prompts the user to select an image file, encodes it in base64, and
-     * sends it to the currently selected conversation.  Prepends "IMG:" to
-     * the body so the receiving controller knows to render an image bubble.
-     */
     private void sendImageAttachment() {
         String conversation = friendListView.getSelectionModel().getSelectedItem();
         if (conversation == null) {
@@ -531,7 +486,7 @@ public class ChatBoxController implements Initializable,
         for (String groupName : groups) {
             List<Message> msgs = chatHistory.get(groupName);
             if (msgs == null) continue;
-            java.util.LinkedHashSet<String> senders = new java.util.LinkedHashSet<>();
+            LinkedHashSet<String> senders = new LinkedHashSet<>();
             for (Message m : msgs) {
                 if (m.getSender() != null && !m.getSender().isEmpty()) {
                     senders.add(m.getSender());
@@ -834,7 +789,59 @@ public class ChatBoxController implements Initializable,
             videoCallController.endCall();
         }
     }
+
+//
+//// VIDEO CONTROLLER DOCUMENTATION
+//
+//    /**
+//     * Displays a simple video call window.  For this prototype, the window
+//     * contains placeholder content indicating the call state.  When the user
+//     * closes the window or clicks the end call button, an END_CALL message
+//     * is sent to the remote peer and the call is terminated.
+//     *
+//     * @param withUser the username of the other participant
+//     * @param incoming true if this call was initiated by the other user
+//     */
+//    private void openVideoCallWindow(String withUser, boolean incoming) {
+//        // Deprecated: this implementation has been moved to VideoCallController
+//    }
+//
+//    /**
+//     * Closes the current video call window and resets the call state.
+//     */
+//    private void closeVideoCallWindow() {
+//        // Deprecated: functionality moved to VideoCallController
+//    }
+//
+//    /**
+//     * Starts capturing webcam frames and sending them to the remote user.
+//     * This method initialises the webcam (if available), sets up a scheduled
+//     * executor to grab frames at ~10 FPS, updates the local feed view, and
+//     * transmits the frames encoded as base64 strings over the network.
+//     *
+//     * @param withUser the username of the remote user in this call
+//     */
+//    private void startVideoCapture(String withUser) {
+//        // Deprecated: functionality moved to VideoCallController
+//    }
+//
+//    /**
+//     * Stops the webcam capture service and releases resources.  Called when
+//     * the call ends or the window is closed.
+//     */
+//    private void stopVideoCapture() {
+//        // Deprecated: functionality moved to VideoCallController
+//    }
+//
+//    /**
+//     * Prompts the user to select an image file, encodes it in base64, and
+//     * sends it to the currently selected conversation.  Prepends "IMG:" to
+//     * the body so the receiving controller knows to render an image bubble.
+//     */
 }
+
+
+
 
 
 

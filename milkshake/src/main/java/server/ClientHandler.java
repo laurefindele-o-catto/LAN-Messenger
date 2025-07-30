@@ -96,7 +96,7 @@ public class ClientHandler implements Runnable {
         OutputStreamWriter  osw = new OutputStreamWriter(socketOut, StandardCharsets.UTF_8);// useful for various symblols .
 
         in  = new BufferedReader(isr);
-        out = new PrintWriter(osw, /*autoFlush=*/true);
+        out = new PrintWriter(osw, true);
     }
 
     /** Blocking loop – parses each command line and dispatches. */

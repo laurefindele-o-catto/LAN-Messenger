@@ -121,7 +121,7 @@ public class ClientConnection {
             socket = new Socket(host, port);
             out = new PrintWriter(socket.getOutputStream(), true);
             this.username = user;
-            new Thread(this::listen, "ClientConnection-Reader").start();
+            new Thread(this::listen, "ClientConnection-Reader").start();// ekhane listen thread shuru korchi
             out.println("ONLINE|" + username);
             return true;
         } catch (IOException e) {
@@ -130,7 +130,7 @@ public class ClientConnection {
         }
     }
 
-    // Send a private message with explicit timestamp
+    // Send a private message with  timestamp
     public void sendPrivateMessage(String to, String body, LocalDateTime timestamp) {
         String timestampStr = timestamp.toString();
         out.println("PRIVATE|" + username + "|" + to + "|" + timestampStr + "|" + body);
@@ -285,6 +285,8 @@ public class ClientConnection {
      * Dispatches a single line from the server.  Group and offline group messages
      * are prefaced with "GROUP_MSG|" so the UI can identify them.
      */
+    // dispatchPool.execute use kora jeto but immediate exceptions throw korchilo.
+
     private void dispatch(String line) {
         String[] p = line.split("\\|", 6);
         String header = p[0];
