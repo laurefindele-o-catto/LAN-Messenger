@@ -12,52 +12,23 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * One thread per connected socket.
- *
- * <p>Understands the following      (pipe-delimited) commands—every field is UTF-8:</p>
- * <ul>
- *   <li><b>ONLINE</b> | username</li>
- *   <li><b>LOGOUT</b> | username</li>
- *   <li><b>SIGNUP</b> | username | password</li>
- *   <li><b>LOGIN</b>  | username | password</li>
- *   <li><b>PRIVATE</b> | from | to | timestamp | text</li>
- *   <li><b>CREATE_GROUP</b> | creator | groupName | m1,m2,…</li>
- *   <li><b>GROUP_MSG</b> | groupName | sender | timestamp | text</li>
- *   <li><b>GROUPS_REQUEST</b> | username</li>
- *   <li><b>SEND_REQUEST</b> | from | to</li>
- *   <li><b>ACCEPT_REQUEST</b> | user | from</li>
- *   <li><b>DECLINE_REQUEST</b> | user | from</li>
- * </ul>
- *
- * <p>Files on disk:</p>
- * <pre>
- *   chats/<user>/<friend>.txt            – chat history
- *   chats/<user>/<friend>.offline.txt    – queued messages
- *   groups/<group>.members               – one username per line
- *   users.txt                            – "user|password" lines
- * </pre>
- */
+
 public class ClientHandler implements Runnable {
 
     /* ───────────────────────────── Shared state ───────────────────────────── */
-
-    /** username → PrintWriter for every online user */
+    /* username → PrintWriter for every online user */
     private static final Map<String, PrintWriter> ONLINE_WRITERS = new ConcurrentHashMap<>();
-
-    /** groupName → member usernames */
+    /* groupName → member usernames */
     private static final Map<String, Set<String>> GROUP_MEMBERS = new ConcurrentHashMap<>();
-
-    /** base folders */
+    /* base folders */
     private static final String CHAT_FOLDER  = "chats";
     private static final String GROUP_FOLDER = "groups";
-
-    /** credentials file */
+    /* credentials file */
     private static final File CRED_FILE = new File("users.txt");
 
     /* ───────────────────────────── Static bootstrap ───────────────────────── */
 
-    /** Load group membership files once per JVM start-up. */
+    /* Load group membership files once per JVM start-up. */
     static {
         loadGroupMembersFromDisk();
     }
@@ -87,7 +58,7 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    /** Create UTF-8 reader / writer wrappers around the socket streams. */
+    /* Create UTF-8 reader / writer wrappers around the socket streams. */
     private void prepareIOStreams() throws IOException {
         InputStream  socketIn  = socket.getInputStream(); // gets the byte stream
         OutputStream socketOut = socket.getOutputStream();
@@ -109,7 +80,7 @@ public class ClientHandler implements Runnable {
             /* Split only up to 5 parts; the message body may contain pipes. */
             String[] pieces = line.split("\\|", 5); // splitting the string into 5 parts using '|' as delimiter;
             if (pieces.length == 0) {
-                continue;   // defensive: ignore blank lines
+                continue;
             }
 
             String command = pieces[0];
@@ -380,12 +351,12 @@ public class ClientHandler implements Runnable {
 
     /* ---------- group membership lookup ---------- */
 
-    /**
+    /*
      * Handles a request for the members of a specific group.  The client
      * sends a command of the form GROUP_MEMBERS_REQUEST|username|groupName.
-     * The server responds with a single line: GROUP_MEMBERS|groupName|m1,m2,...
-     * containing the names of all members in the specified group.  If the
-     * group does not exist, an empty member list is sent.
+     * Sercer respond kore with a single line: GROUP_MEMBERS|groupName|m1,m2,...
+     * containing the names of all members in the specified group.  Group exist
+     * na korle, an empty member list is sent.
      *
      * @param p the parsed command parts
      */
@@ -438,31 +409,7 @@ public class ClientHandler implements Runnable {
         }
     }
 
-//    private void handleAcceptRequest(String[] p) {
-//        /* ACCEPT_REQUEST|user|from */
-//        if (p.length < 3) {
-//            return;
-//        }
-//
-//        String user = p[1];
-//        String from = p[2];
-//
-//        User u1 = Database.loadUser(user);
-//        User u2 = Database.loadUser(from);
-//
-//        if (u1 == null || u2 == null) {
-//            return;
-//        }
-//
-//        u1.acceptFriendRequest(u2);
-//        Database.saveUser(u1);
-//        Database.saveUser(u2);
-//
-//        PrintWriter pw = ONLINE_WRITERS.get(from);
-//        if (pw != null) {
-//            pw.println("ACCEPTED_REQUEST_FROM|" + user);
-//        }
-//    }
+
 
     private void handleAcceptRequest(String[] p) {
         /* ACCEPT_REQUEST|user|from */
@@ -733,7 +680,7 @@ public class ClientHandler implements Runnable {
         writer.println(packet);
     }
 
-    /* ────────────────────── Group membership persistence ─────────────────── */
+    /* ────────────────────── Group membership  ─────────────────── */
 
     private static void loadGroupMembersFromDisk() {
         File dir = new File(GROUP_FOLDER);
@@ -817,11 +764,7 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    /**
-     * Handles an incoming video call request.  The expected format is
-     * VIDEO_CALL_REQUEST|caller|callee.  If the callee is currently online,
-     * the request is forwarded to them.  Otherwise the request is ignored.
-     */
+
     private void handleVideoCallRequest(String[] p) {
         if (p.length < 3) {
             return;
@@ -835,11 +778,7 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    /**
-     * Handles a response to a video call request.  Expected format:
-     * VIDEO_CALL_RESPONSE|responder|to|answer, where answer is "yes" or
-     * "no".  The response is forwarded to the original caller if online.
-     */
+
     private void handleVideoCallResponse(String[] p) {
         if (p.length < 4) {
             return;
@@ -853,11 +792,7 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    /**
-     * Handles a request to end an ongoing video call.  Expected format:
-     * END_CALL|from|to.  The termination is forwarded to the other user
-     * if they are online.
-     */
+
     private void handleEndCall(String[] p) {
         if (p.length < 3) {
             return;
@@ -870,12 +805,7 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    /**
-     * Handles a video frame from a client.  The expected format is
-     * VIDEO_FRAME|from|to|data.  The frame is forwarded to the intended
-     * recipient if they are currently online.  Frames are encoded as
-     * base64 JPEG strings.
-     */
+
     private void handleVideoFrame(String[] p) {
         if (p.length < 4) {
             return;
@@ -889,14 +819,7 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    /**
-     * Handles a chunk of audio data from a client.  The expected format is
-     * AUDIO_FRAME|from|to|data.  The audio is forwarded to the intended
-     * recipient if they are currently online.  Audio frames are base64
-     * encoded raw PCM bytes (e.g., 16‑bit little endian mono samples).
-     *
-     * @param p the split command array
-     */
+
     private void handleAudioFrame(String[] p) {
         if (p.length < 4) {
             return;
@@ -922,3 +845,33 @@ public class ClientHandler implements Runnable {
         }
     }
 }
+
+
+
+
+/**
+ * One thread per connected socket.
+ *
+ * <p>Understands the following      (pipe-delimited) commands—every field is UTF-8:</p>
+ * <ul>
+ *   <li><b>ONLINE</b> | username</li>
+ *   <li><b>LOGOUT</b> | username</li>
+ *   <li><b>SIGNUP</b> | username | password</li>
+ *   <li><b>LOGIN</b>  | username | password</li>
+ *   <li><b>PRIVATE</b> | from | to | timestamp | text</li>
+ *   <li><b>CREATE_GROUP</b> | creator | groupName | m1,m2,…</li>
+ *   <li><b>GROUP_MSG</b> | groupName | sender | timestamp | text</li>
+ *   <li><b>GROUPS_REQUEST</b> | username</li>
+ *   <li><b>SEND_REQUEST</b> | from | to</li>
+ *   <li><b>ACCEPT_REQUEST</b> | user | from</li>
+ *   <li><b>DECLINE_REQUEST</b> | user | from</li>
+ * </ul>
+ *
+ * <p>Files on disk:</p>
+ * <pre>
+ *   chats/<user>/<friend>.txt            – chat history
+ *   chats/<user>/<friend>.offline.txt    – queued messages
+ *   groups/<group>.members               – one username per line
+ *   users.txt                            – "user|password" lines
+ * </pre>
+ */

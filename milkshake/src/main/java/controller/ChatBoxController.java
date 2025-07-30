@@ -38,57 +38,54 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-/**
- * Controller for the chat box view.  Handles sending/receiving private and
- * group messages, rendering chat bubbles, and updating the friend list in
- * real time when friend requests are accepted or declined.  Implements both
- * {@link ClientConnection.MessageListener} to receive messages and
- * {@link ClientConnection.FriendListener} to react to friend request events.
- */
+
 public class ChatBoxController implements Initializable,
         ClientConnection.MessageListener,
         ClientConnection.FriendListener {
 
-    // FXML injected controls
-    @FXML private ListView<String> friendListView;
-    @FXML private ScrollPane chatScrollPane;
-    @FXML private VBox chatMessagesBox;
-    @FXML private TextField messageField;
-    @FXML private Button sendButton;
-    @FXML private Button backButton;
-    @FXML private Button createGroupButton;
-    @FXML private Button imageButton;
-    @FXML private Button membersButton;
-    @FXML private Button videoCallButton;
-    @FXML private Label chatTitleLabel;
-    @FXML private ImageView profileImageView;
+    // FXML  controls
+    @FXML
+    private ListView<String> friendListView;
+    @FXML
+    private ScrollPane chatScrollPane;
+    @FXML
+    private VBox chatMessagesBox;
+    @FXML
+    private TextField messageField;
+    @FXML
+    private Button sendButton;
+    @FXML
+    private Button backButton;
+    @FXML
+    private Button createGroupButton;
+    @FXML
+    private Button imageButton;
+    @FXML
+    private Button membersButton;
+    @FXML
+    private Button videoCallButton;
+    @FXML
+    private Label chatTitleLabel;
+    @FXML
+    private ImageView profileImageView;
 
     private User currentUser;
     private ClientConnection connection;
-    /** Map of conversation identifiers (friend username or group name) to their
+    /* Map of conversation identifiers (friend username or group name) to their
      * message history.  Used to render existing messages when switching
      * between conversations. */
     private final Map<String, List<Message>> chatHistory = new HashMap<>();
-    /** Set of group names that the current user belongs to. */
-    private final Set<String> groups = new HashSet<>();
-    /** Map of group name to the list of members in that group.  Populated
-     * whenever group history or creation events are received. */
-    private final Map<String, List<String>> groupMembersMap = new HashMap<>();
-    /** Timestamp formatter for chat bubbles. */
-    private static final DateTimeFormatter TIMESTAMP_FORMATTER =
-            DateTimeFormatter.ofPattern("HH:mm");
 
-    /**
-     * Video call controller that manages call lifecycle and frame handling.
-     * This keeps the chat controller focused on messaging and friend logic.
-     */
+    private final Set<String> groups = new HashSet<>();
+
+    private final Map<String, List<String>> groupMembersMap = new HashMap<>();
+
+    private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
+
+
     private VideoCallController videoCallController;
 
-    /**
-     * Initialize the chat box.  Registers the controller as a message and
-     * friend listener, requests chat and group history, populates the friend
-     * list, and wires up button handlers.
-     */
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         connection = ClientConnection.getInstance();
@@ -100,36 +97,36 @@ public class ChatBoxController implements Initializable,
         // Instantiate the video call controller after obtaining the current user.  The
         // controller will manage all call related state and communication.
         videoCallController = new VideoCallController(connection, currentUser.getUsername());
-        // Request initial histories
+
         connection.requestChatHistory(currentUser.getUsername());
         connection.requestGroupList();
-        // Build the friend/group list in the UI
+
         populateFriendList();
-        // When the user selects a conversation, load its history
+
         friendListView.getSelectionModel().selectedItemProperty()
                 .addListener((obs, oldVal, newVal) -> loadChat(newVal));
-        // Send message on button click or enter key
+
         sendButton.setOnAction(e -> sendCurrentMessage());
         messageField.setOnAction(e -> sendCurrentMessage());
-        // Back to dashboard; remove listeners
+
         backButton.setOnAction(e -> {
             shutdown();
             sceneChange.changeScene("Dashboard.fxml", backButton, currentUser);
         });
-        // Create a new group
+
         if (createGroupButton != null) {
             createGroupButton.setOnAction(e -> openGroupCreationDialog());
         }
-        // Attach image to current conversation
+
         if (imageButton != null) {
             imageButton.setOnAction(e -> sendImageAttachment());
         }
-        // Show group members for the currently selected group
+
         if (membersButton != null) {
             membersButton.setOnAction(e -> showGroupMembers());
         }
 
-        // Initiate a video call on click (only valid for private chats)
+
         if (videoCallButton != null) {
             videoCallButton.setOnAction(e -> initiateVideoCall());
         }
@@ -187,10 +184,10 @@ public class ChatBoxController implements Initializable,
         dialog.showAndWait();
     }
 
-    /**
-     * Populates the friend list UI with the current user's friends and any
-     * groups the user belongs to.  The list is sorted alphabetically.
-     */
+
+    // Populates the friend list UI with the current user's friends and any
+    // groups the user belongs to.  The list is sorted alphabetically.
+
     private void populateFriendList() {
         Set<String> friends = currentUser.getFriends();
         List<String> all = new ArrayList<>();
@@ -202,12 +199,9 @@ public class ChatBoxController implements Initializable,
         friendListView.setItems(FXCollections.observableArrayList(all));
     }
 
-    /**
-     * Loads and displays the message history for a conversation (friend or
-     * group).  Also updates the chat title and members button visibility.
-     *
-     * @param conversation the name of the friend or group
-     */
+
+    // @param conversation the name of the friend or group
+
     private void loadChat(String conversation) {
         // Update the title label
         if (chatTitleLabel != null) {
@@ -219,7 +213,7 @@ public class ChatBoxController implements Initializable,
             membersButton.setVisible(isGroup);
         }
 
-        // Show or hide the video call button for one‑to‑one chats
+
         if (videoCallButton != null) {
             boolean isGroup = conversation != null && groups.contains(conversation);
             // Only show when a conversation is selected and it is not a group
@@ -236,17 +230,12 @@ public class ChatBoxController implements Initializable,
         }
         scrollToBottom();
 
-        // If this is a group conversation and we don't yet know its members,
-        // proactively request the membership list from the server.  The
-        // asynchronous response will update groupMembersMap so that
-        // showGroupMembers() will have accurate data.  We only request
-        // membership once per group to avoid unnecessary round trips.
+
         if (conversation != null && groups.contains(conversation)) {
             if (!groupMembersMap.containsKey(conversation) || groupMembersMap.get(conversation).isEmpty()) {
                 connection.requestGroupMembers(conversation);
             }
         }
-        //show the image
 
 
         File imgFile = new File("users/" + conversation + "/profile.jpg");
@@ -267,10 +256,7 @@ public class ChatBoxController implements Initializable,
         profileImageView.setClip(clip);
     }
 
-    /**
-     * Sends the text currently in the message field to the selected
-     * conversation.  Handles both private and group chats.
-     */
+
     private void sendCurrentMessage() {
         String conversation = friendListView.getSelectionModel().getSelectedItem();
         String text = messageField.getText().trim();
@@ -290,12 +276,7 @@ public class ChatBoxController implements Initializable,
         messageField.clear();
     }
 
-    /**
-     * Initiates a video call to the currently selected friend.  Only allowed
-     * when not in an ongoing call and the selected conversation is a private
-     * chat.  Sends a request to the remote user via the server and opens the
-     * caller’s video call window after the remote party accepts.
-     */
+
     private void initiateVideoCall() {
         String conversation = friendListView.getSelectionModel().getSelectedItem();
         // Only allow calls to friends (not groups)
@@ -307,8 +288,7 @@ public class ChatBoxController implements Initializable,
             alert.showAndWait();
             return;
         }
-        // Delegate call initiation to the video call controller.  It will handle
-        // sending the request and notifying the user of call status.
+
         videoCallController.initiateCall(conversation);
     }
 
@@ -348,10 +328,10 @@ public class ChatBoxController implements Initializable,
         }
     }
 
-    /**
-     * Adds a message to the history for a conversation and renders it if
-     * currently viewing that conversation.
-     */
+
+    //   Adds a message to the history for a conversation and renders it if
+    //  currently viewing that conversation.
+
     private void appendAndRender(Message m) {
         String conversation = m.getReceiver();
         chatHistory.computeIfAbsent(conversation, k -> new ArrayList<>()).add(m);
@@ -362,9 +342,7 @@ public class ChatBoxController implements Initializable,
         }
     }
 
-    /**
-     * Displays the members of the currently selected group chat in an alert.
-     */
+
     private void showGroupMembers() {
         String conversation = friendListView.getSelectionModel().getSelectedItem();
         if (conversation == null || !groups.contains(conversation)) {
@@ -398,84 +376,7 @@ public class ChatBoxController implements Initializable,
         alert.showAndWait();
     }
 
-    /**
-     * Creates a chat bubble for a given message.  Supports both text and
-     * image messages.  Group messages include the sender’s name for
-     * messages not sent by the current user.
-     */
-//    private HBox makeBubble(Message m) {
-//        boolean isSent = m.getSender().equals(currentUser.getUsername());
-//        boolean isGroup = groups.contains(m.getReceiver());
-//        HBox box = new HBox();
-//        box.setAlignment(isSent ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
-//        box.setPadding(new Insets(4, 8, 4, 8));
-//        String text = m.getText();
-//        if (text != null && text.startsWith("IMG:")) {
-//            // Parse out the base64 encoded image
-//            String payload = text.substring(4);
-//            int idx = payload.indexOf(":");
-//            if (idx > 0) {
-//                String encoded = payload.substring(idx + 1);
-//                try {
-//                    byte[] data = Base64.getDecoder().decode(encoded);
-//                    Image img = new Image(new ByteArrayInputStream(data));
-//                    ImageView iv = new ImageView(img);
-//                    iv.setFitWidth(200);
-//                    iv.setPreserveRatio(true);
-//                    Text timestampNode = new Text("[" + m.getTimestamp().format(TIMESTAMP_FORMATTER) + "] ");
-//                    timestampNode.setStyle("-fx-font-size: 10px; -fx-fill: gray;");
-//                    VBox v = new VBox();
-//                    v.setSpacing(2);
-//                    v.setAlignment(isSent ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
-//                    v.getChildren().add(iv);
-//                    v.getChildren().add(timestampNode);
-//                    v.setStyle("-fx-background-color: " + (isSent ? "#DCF8C6" : "#FFFFFF") +
-//                            "; -fx-padding: 8px; -fx-background-radius: 10px;");
-//                    if (isGroup && !isSent) {
-//                        Text senderNode = new Text(m.getSender() + ":\n");
-//                        senderNode.setStyle("-fx-font-weight: bold; -fx-fill: black;");
-//                        VBox wrapper = new VBox();
-//                        wrapper.getChildren().addAll(senderNode, v);
-//                        box.getChildren().add(wrapper);
-//                    } else {
-//                        box.getChildren().add(v);
-//                    }
-//                } catch (Exception e) {
-//                    // Fallback for invalid image data
-//                    String fallback = isGroup && !isSent ? m.getSender() + ": [Invalid image]" : "[Invalid image]";
-//                    Text textNode = new Text(fallback);
-//                    Text timestampNode = new Text("[" + m.getTimestamp().format(TIMESTAMP_FORMATTER) + "] ");
-//                    timestampNode.setStyle("-fx-font-size: 10px; -fx-fill: gray;");
-//                    TextFlow flow = new TextFlow(timestampNode, textNode);
-//                    flow.setStyle("-fx-background-color: " + (isSent ? "#DCF8C6" : "#FFFFFF") +
-//                            "; -fx-padding: 8px; -fx-background-radius: 10px;");
-//                    box.getChildren().add(flow);
-//                }
-//            } else {
-//                // Malformed image message: treat remainder as text
-//                String remainder = payload;
-//                String displayText = isGroup && !isSent ? m.getSender() + ": " + remainder : remainder;
-//                Text textNode = new Text(displayText);
-//                Text timestampNode = new Text("[" + m.getTimestamp().format(TIMESTAMP_FORMATTER) + "] ");
-//                timestampNode.setStyle("-fx-font-size: 10px; -fx-fill: gray;");
-//                TextFlow flow = new TextFlow(timestampNode, textNode);
-//                flow.setStyle("-fx-background-color: " + (isSent ? "#DCF8C6" : "#FFFFFF") +
-//                        "; -fx-padding: 8px; -fx-background-radius: 10px;");
-//                box.getChildren().add(flow);
-//            }
-//        } else {
-//            // Standard text message
-//            String displayText = text == null ? "" : (isGroup && !isSent ? m.getSender() + ": " + text : text);
-//            Text textNode = new Text(displayText);
-//            Text timestampNode = new Text("[" + m.getTimestamp().format(TIMESTAMP_FORMATTER) + "] ");
-//            timestampNode.setStyle("-fx-font-size: 10px; -fx-fill: gray;");
-//            TextFlow flow = new TextFlow(timestampNode, textNode);
-//            flow.setStyle("-fx-background-color: " + (isSent ? "#DCF8C6" : "#FFFFFF") +
-//                    "; -fx-padding: 8px; -fx-background-radius: 10px;");
-//            box.getChildren().add(flow);
-//        }
-//        return box;
-//    }
+
     private HBox makeBubble(Message m) {
         boolean isSent = m.getSender().equals(currentUser.getUsername());
         boolean isGroup = groups.contains(m.getReceiver());
@@ -521,7 +422,7 @@ public class ChatBoxController implements Initializable,
                         VBox wrapper = new VBox();
                         wrapper.setSpacing(4);
 
-                        // ✅ NEW: Sender label only in group
+
                         if (isGroup) {
                             Label senderLabel = new Label(m.getSender());
                             senderLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: white; -fx-font-size: 12;");
@@ -567,7 +468,6 @@ public class ChatBoxController implements Initializable,
             flow.setStyle("-fx-background-color: " + (isSent ? "#DCF8C6" : "#FFFFFF") +
                     "; -fx-padding: 8px; -fx-background-radius: 10px;");
 
-            // ✅ NEW: if incoming message
             if (!isSent) {
                 File profileFile = new File("users/" + m.getSender() + "/profile.jpg");
                 Image profileImage = profileFile.exists()
@@ -583,7 +483,7 @@ public class ChatBoxController implements Initializable,
                 VBox wrapper = new VBox();
                 wrapper.setSpacing(4);
 
-                // ✅ NEW: add sender label only if group
+
                 if (isGroup) {
                     Label senderLabel = new Label(m.getSender());
                     senderLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: white; -fx-font-size: 12;");
@@ -601,9 +501,9 @@ public class ChatBoxController implements Initializable,
         return box;
     }
 
-    /**
-     * Scrolls the chat view to the bottom.  Called after messages are added.
-     */
+
+    //Scrolls the chat view to the bottom.  Called after messages are added.
+
     private void scrollToBottom() {
         Platform.runLater(() -> {
             chatScrollPane.layout();
@@ -611,7 +511,7 @@ public class ChatBoxController implements Initializable,
         });
     }
 
-    /**
+    /*
      * Rebuilds the map of group members based on the current chat history.
      * This method iterates over all known groups and extracts unique
      * senders from each group's message history.  The current user is
@@ -636,20 +536,12 @@ public class ChatBoxController implements Initializable,
         }
     }
 
-    /**
-     * Invoked when a message is received from the server.  Delegates to
-     * {@link #handleIncomingMessage(String, String)} on the JavaFX thread.
-     */
+
     @Override
     public void onMessageReceived(String from, String body) {
         Platform.runLater(() -> handleIncomingMessage(from, body));
     }
 
-    /* ------------------------------------------------------------------- */
-    /*                   FriendListener implementation                     */
-    /* These callbacks fire when a friend request is received, accepted,   */
-    /* or declined.  Refresh the current user and repopulate the friend   */
-    /* list so that newly accepted friends appear immediately.            */
 
     @Override
     public void onFriendRequestReceived(String from) {
@@ -666,7 +558,7 @@ public class ChatBoxController implements Initializable,
         Platform.runLater(this::refreshFriendList);
     }
 
-    /**
+    /*
      * Refresh the current user from disk and update the friend list.  The
      * currently selected conversation is preserved if possible.
      */
@@ -680,15 +572,10 @@ public class ChatBoxController implements Initializable,
         }
     }
 
-    /**
-     * Parses and handles incoming messages from the server.  Supports chat
-     * histories, group histories, group creation, group messages, and
-     * fallback handling for simple private messages.
-     */
+
     private void handleIncomingMessage(String from, String body) {
         try {
-            // Delegate all video call related messages to the video call controller
-            // Incoming video frame
+
             if (body != null && body.startsWith("VIDEO_FRAME|")) {
                 String data = body.substring("VIDEO_FRAME|".length());
                 videoCallController.receiveVideoFrame(from, data);
@@ -781,7 +668,7 @@ public class ChatBoxController implements Initializable,
                 // Format: GROUP_MEMBERS|groupName|m1,m2,m3
                 String[] parts = body.split("\\|", 3);
                 if (parts.length >= 3) {
-                    String groupName  = parts[1];
+                    String groupName = parts[1];
                     String memberCsv = parts[2];
                     List<String> memberList = new ArrayList<>();
                     if (!memberCsv.isEmpty()) {
@@ -891,7 +778,7 @@ public class ChatBoxController implements Initializable,
         }
     }
 
-    /**
+    /*
      * Parses a chat history payload into a list of Message objects.  Each
      * entry is expected to be of the form sender|timestamp|text.  The
      * receiver is always stored as the friend’s username for private chats.
@@ -913,34 +800,42 @@ public class ChatBoxController implements Initializable,
         return messages;
     }
 
-    /**
-     * Simple data class representing a chat message.  Contains the sender,
-     * receiver (conversation identifier), message text, and timestamp.
-     */
+
     public static class Message {
         private final String sender;
         private final String receiver;
         private final String text;
         private final LocalDateTime timestamp;
+
         public Message(String sender, String receiver, String text, LocalDateTime timestamp) {
             this.sender = sender;
             this.receiver = receiver;
             this.text = text;
             this.timestamp = timestamp;
         }
-        public String getSender() { return sender; }
-        public String getReceiver() { return receiver; }
-        public String getText() { return text; }
-        public LocalDateTime getTimestamp() { return timestamp; }
+
+        public String getSender() {
+            return sender;
+        }
+
+        public String getReceiver() {
+            return receiver;
+        }
+
+        public String getText() {
+            return text;
+        }
+
+        public LocalDateTime getTimestamp() {
+            return timestamp;
+        }
+
         public String getOtherParty(String currentUser) {
             return currentUser.equals(sender) ? receiver : sender;
         }
     }
 
-    /**
-     * Called when the chat UI is closed.  Unregisters this controller from
-     * receiving further message and friend events.
-     */
+
     public void shutdown() {
         connection.removeListener(this);
         connection.removeFriendListener(this);
@@ -950,61 +845,7 @@ public class ChatBoxController implements Initializable,
             videoCallController.endCall();
         }
     }
-
-//
-//// VIDEO CONTROLLER DOCUMENTATION
-//
-//    /**
-//     * Displays a simple video call window.  For this prototype, the window
-//     * contains placeholder content indicating the call state.  When the user
-//     * closes the window or clicks the end call button, an END_CALL message
-//     * is sent to the remote peer and the call is terminated.
-//     *
-//     * @param withUser the username of the other participant
-//     * @param incoming true if this call was initiated by the other user
-//     */
-//    private void openVideoCallWindow(String withUser, boolean incoming) {
-//        // Deprecated: this implementation has been moved to VideoCallController
-//    }
-//
-//    /**
-//     * Closes the current video call window and resets the call state.
-//     */
-//    private void closeVideoCallWindow() {
-//        // Deprecated: functionality moved to VideoCallController
-//    }
-//
-//    /**
-//     * Starts capturing webcam frames and sending them to the remote user.
-//     * This method initialises the webcam (if available), sets up a scheduled
-//     * executor to grab frames at ~10 FPS, updates the local feed view, and
-//     * transmits the frames encoded as base64 strings over the network.
-//     *
-//     * @param withUser the username of the remote user in this call
-//     */
-//    private void startVideoCapture(String withUser) {
-//        // Deprecated: functionality moved to VideoCallController
-//    }
-//
-//    /**
-//     * Stops the webcam capture service and releases resources.  Called when
-//     * the call ends or the window is closed.
-//     */
-//    private void stopVideoCapture() {
-//        // Deprecated: functionality moved to VideoCallController
-//    }
-//
-//    /**
-//     * Prompts the user to select an image file, encodes it in base64, and
-//     * sends it to the currently selected conversation.  Prepends "IMG:" to
-//     * the body so the receiving controller knows to render an image bubble.
-//     */
 }
-
-
-
-
-
 
 
 

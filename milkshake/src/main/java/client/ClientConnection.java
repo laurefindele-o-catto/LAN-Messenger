@@ -17,11 +17,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/**
- * Manages the client's connection to the server and dispatches incoming messages.
- * Group messages are delivered with a "GROUP_MSG|" prefix so the UI can
- * distinguish them from one-to-one messages.
- */
+
 public class ClientConnection {
 
     private static ClientConnection INSTANCE;
@@ -52,10 +48,7 @@ public class ClientConnection {
         friendListeners.remove(l);
     }
 
-    /**
-     * Dispatch friend-related events. Splits incoming messages and triggers
-     * the appropriate FriendListener callbacks based on the header.
-     */
+
     private void dispatchRequests(String msg) {
         String[] parts = msg.split("\\|", 3);
         if (parts.length < 2) return;
@@ -142,7 +135,7 @@ public class ClientConnection {
         out.println("PRIVATE|" + username + "|" + to + "|" + timestampStr + "|" + body);
     }
 
-    /**
+    /*
      * Sends a group chat message to the server.
      * Format: GROUP_MSG|groupName|sender|timestamp|body
      */
@@ -182,7 +175,7 @@ public class ClientConnection {
         }
     }
 
-    /**
+    /*
      * Requests the membership list for a specific group.  The server
      * responds with a line beginning with "GROUP_MEMBERS|" containing the
      * group name and a comma separated list of members.  The username of
@@ -198,12 +191,7 @@ public class ClientConnection {
         }
     }
 
-    /**
-     * Sends a video call request to the specified user.  The server will
-     * forward this request to the recipient if they are currently online.
-     *
-     * @param to the username of the user to call
-     */
+
     public void sendVideoCallRequest(String to) {
         if (out != null && username != null && to != null && !to.isEmpty()) {
             out.println("VIDEO_CALL_REQUEST|" + username + "|" + to);
@@ -211,14 +199,7 @@ public class ClientConnection {
         }
     }
 
-    /**
-     * Sends a response to a pending video call request.  This is invoked
-     * when a user accepts or declines an incoming call.  The server will
-     * relay the response to the original caller.
-     *
-     * @param to      the username of the caller
-     * @param accept  true to accept the call, false to decline
-     */
+
     public void sendVideoCallResponse(String to, boolean accept) {
         if (out != null && username != null && to != null && !to.isEmpty()) {
             String answer = accept ? "yes" : "no";
@@ -227,11 +208,7 @@ public class ClientConnection {
         }
     }
 
-    /**
-     * Sends a message indicating that the current video call has ended.
-     *
-     * @param to the username of the other participant
-     */
+
     public void sendEndCall(String to) {
         if (out != null && username != null && to != null && !to.isEmpty()) {
             out.println("END_CALL|" + username + "|" + to);
@@ -239,14 +216,7 @@ public class ClientConnection {
         }
     }
 
-    /**
-     * Sends a single video frame to the specified user.  The frame should be
-     * encoded as a base64 string (e.g., JPEG bytes).  This method is used
-     * during an active video call to stream live video.
-     *
-     * @param to     the username of the remote party
-     * @param base64 the base64‑encoded JPEG frame
-     */
+
     public void sendVideoFrame(String to, String base64) {
         if (out != null && username != null && to != null && !to.isEmpty() && base64 != null) {
             out.println("VIDEO_FRAME|" + username + "|" + to + "|" + base64);
@@ -254,15 +224,7 @@ public class ClientConnection {
         }
     }
 
-    /**
-     * Sends a chunk of audio data to the specified user.  Audio frames should
-     * be encoded as a base64 string of raw PCM bytes (e.g., 16‑bit little
-     * endian mono samples).  This method is invoked repeatedly during an
-     * active call to stream microphone audio in near real‑time.
-     *
-     * @param to     the username of the remote party
-     * @param base64 the base64‑encoded PCM audio data
-     */
+
     public void sendAudioFrame(String to, String base64) {
         if (out != null && username != null && to != null && !to.isEmpty() && base64 != null) {
             out.println("AUDIO_FRAME|" + username + "|" + to + "|" + base64);
@@ -270,7 +232,7 @@ public class ClientConnection {
         }
     }
 
-    /**
+    /*
      * Listens on the socket for incoming lines and delegates them.
      * Runs in its own thread.
      */
@@ -297,7 +259,7 @@ public class ClientConnection {
         }
     }
 
-    /**
+    /*
      * Dispatches a single line from the server.  Group and offline group messages
      * are prefaced with "GROUP_MSG|" so the UI can identify them.
      */
@@ -432,7 +394,7 @@ public class ClientConnection {
         }
     }
 
-    /** Gracefully close the socket connection. */
+
     public void close() {
         try {
             if (socket != null && !socket.isClosed()) {
@@ -443,7 +405,7 @@ public class ClientConnection {
         }
     }
 
-    /** Clears the current user and listeners on logout. */
+    /* Clears the current user and listeners on logout. */
     public void clearCurrentUser() {
         this.username = null;
         this.currentController = null;
@@ -455,9 +417,7 @@ public class ClientConnection {
         this.username = u;
     }
 
-    /**
-     * Upload a profile image to the server.  Sends a header followed by the raw file bytes.
-     */
+
     public void uploadProfileImage(File file) {
         try {
             DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
