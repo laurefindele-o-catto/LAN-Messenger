@@ -183,6 +183,22 @@ public class ClientConnection {
     }
 
     /**
+     * Requests the membership list for a specific group.  The server
+     * responds with a line beginning with "GROUP_MEMBERS|" containing the
+     * group name and a comma separated list of members.  The username of
+     * the requester is included so the server can route the response to
+     * the correct client.  If the group is unknown, an empty list will
+     * be returned.
+     *
+     * @param groupName the name of the group whose members are desired
+     */
+    public void requestGroupMembers(String groupName) {
+        if (out != null && username != null && groupName != null && !groupName.isEmpty()) {
+            out.println("GROUP_MEMBERS_REQUEST|" + username + "|" + groupName);
+        }
+    }
+
+    /**
      * Sends a video call request to the specified user.  The server will
      * forward this request to the recipient if they are currently online.
      *
@@ -320,6 +336,14 @@ public class ClientConnection {
             String creator = p[2];
             String members = p.length >= 4 ? p[3] : "";
             String body = "GROUP_CREATED|" + groupName + "|" + creator + "|" + members;
+            for (MessageListener l : listeners) {
+                dispatchPool.submit(() -> l.onMessageReceived("", body));
+            }
+        } else if ("GROUP_MEMBERS".equals(header) && p.length >= 3) {
+            // GROUP_MEMBERS|groupName|m1,m2,m3
+            String groupName  = p[1];
+            String memberCsv = p[2];
+            String body      = "GROUP_MEMBERS|" + groupName + "|" + memberCsv;
             for (MessageListener l : listeners) {
                 dispatchPool.submit(() -> l.onMessageReceived("", body));
             }

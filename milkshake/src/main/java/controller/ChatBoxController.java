@@ -235,6 +235,17 @@ public class ChatBoxController implements Initializable,
             }
         }
         scrollToBottom();
+
+        // If this is a group conversation and we don't yet know its members,
+        // proactively request the membership list from the server.  The
+        // asynchronous response will update groupMembersMap so that
+        // showGroupMembers() will have accurate data.  We only request
+        // membership once per group to avoid unnecessary round trips.
+        if (conversation != null && groups.contains(conversation)) {
+            if (!groupMembersMap.containsKey(conversation) || groupMembersMap.get(conversation).isEmpty()) {
+                connection.requestGroupMembers(conversation);
+            }
+        }
         //show the image
 
 
@@ -365,11 +376,14 @@ public class ChatBoxController implements Initializable,
             return;
         }
         List<String> members = groupMembersMap.get(conversation);
+        // If membership information is missing, attempt to fetch it from the server.
         if (members == null || members.isEmpty()) {
+            // Request the member list.  The response will update groupMembersMap.
+            connection.requestGroupMembers(conversation);
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setTitle("Group Members");
             alert.setHeaderText(null);
-            alert.setContentText("No member information available for this group.");
+            alert.setContentText("Fetching group member information. Please try again shortly.");
             alert.showAndWait();
             return;
         }
@@ -760,6 +774,29 @@ public class ChatBoxController implements Initializable,
                     }
                     // After updating group histories, rebuild member lists to ensure they persist
                     rebuildGroupMembers();
+                }
+                return;
+            }
+            if (body.startsWith("GROUP_MEMBERS|")) {
+                // Format: GROUP_MEMBERS|groupName|m1,m2,m3
+                String[] parts = body.split("\\|", 3);
+                if (parts.length >= 3) {
+                    String groupName  = parts[1];
+                    String memberCsv = parts[2];
+                    List<String> memberList = new ArrayList<>();
+                    if (!memberCsv.isEmpty()) {
+                        for (String m : memberCsv.split(",")) {
+                            String trimmed = m.trim();
+                            if (!trimmed.isEmpty() && !memberList.contains(trimmed)) {
+                                memberList.add(trimmed);
+                            }
+                        }
+                    }
+                    // Ensure current user is included in the list
+                    if (!memberList.contains(currentUser.getUsername())) {
+                        memberList.add(currentUser.getUsername());
+                    }
+                    groupMembersMap.put(groupName, memberList);
                 }
                 return;
             }

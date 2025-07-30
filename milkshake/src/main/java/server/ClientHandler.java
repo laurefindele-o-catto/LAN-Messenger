@@ -132,6 +132,7 @@ public class ClientHandler implements Runnable {
                 case "END_CALL": handleEndCall(pieces); break;
                 case "VIDEO_FRAME": handleVideoFrame(pieces); break;
                 case "AUDIO_FRAME": handleAudioFrame(pieces); break;
+                case "GROUP_MEMBERS_REQUEST": handleGroupMembersRequest(pieces); break;
                 /* Unknown commands are ignored for now */
             }
         }
@@ -375,6 +376,35 @@ public class ClientHandler implements Runnable {
 
         String csv = String.join(",", groups);
         out.println("GROUP_LIST|" + csv);
+    }
+
+    /* ---------- group membership lookup ---------- */
+
+    /**
+     * Handles a request for the members of a specific group.  The client
+     * sends a command of the form GROUP_MEMBERS_REQUEST|username|groupName.
+     * The server responds with a single line: GROUP_MEMBERS|groupName|m1,m2,...
+     * containing the names of all members in the specified group.  If the
+     * group does not exist, an empty member list is sent.
+     *
+     * @param p the parsed command parts
+     */
+    private void handleGroupMembersRequest(String[] p) {
+        // Expected: GROUP_MEMBERS_REQUEST|username|groupName
+        if (p.length < 3) {
+            return;
+        }
+        String requestingUser = p[1];
+        String groupName      = p[2];
+
+        Set<String> members = GROUP_MEMBERS.getOrDefault(groupName, Collections.emptySet());
+        // Create a CSV of member names
+        String memberCsv = String.join(",", members);
+        // Respond to only the requesting client
+        PrintWriter targetOut = ONLINE_WRITERS.get(requestingUser);
+        if (targetOut != null) {
+            targetOut.println("GROUP_MEMBERS|" + groupName + "|" + memberCsv);
+        }
     }
 
     /* ---------- friend requests ---------- */
