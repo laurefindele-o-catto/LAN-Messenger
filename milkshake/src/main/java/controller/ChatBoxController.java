@@ -389,15 +389,90 @@ public class ChatBoxController implements Initializable,
      * image messages.  Group messages include the sender’s name for
      * messages not sent by the current user.
      */
+//    private HBox makeBubble(Message m) {
+//        boolean isSent = m.getSender().equals(currentUser.getUsername());
+//        boolean isGroup = groups.contains(m.getReceiver());
+//        HBox box = new HBox();
+//        box.setAlignment(isSent ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+//        box.setPadding(new Insets(4, 8, 4, 8));
+//        String text = m.getText();
+//        if (text != null && text.startsWith("IMG:")) {
+//            // Parse out the base64 encoded image
+//            String payload = text.substring(4);
+//            int idx = payload.indexOf(":");
+//            if (idx > 0) {
+//                String encoded = payload.substring(idx + 1);
+//                try {
+//                    byte[] data = Base64.getDecoder().decode(encoded);
+//                    Image img = new Image(new ByteArrayInputStream(data));
+//                    ImageView iv = new ImageView(img);
+//                    iv.setFitWidth(200);
+//                    iv.setPreserveRatio(true);
+//                    Text timestampNode = new Text("[" + m.getTimestamp().format(TIMESTAMP_FORMATTER) + "] ");
+//                    timestampNode.setStyle("-fx-font-size: 10px; -fx-fill: gray;");
+//                    VBox v = new VBox();
+//                    v.setSpacing(2);
+//                    v.setAlignment(isSent ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+//                    v.getChildren().add(iv);
+//                    v.getChildren().add(timestampNode);
+//                    v.setStyle("-fx-background-color: " + (isSent ? "#DCF8C6" : "#FFFFFF") +
+//                            "; -fx-padding: 8px; -fx-background-radius: 10px;");
+//                    if (isGroup && !isSent) {
+//                        Text senderNode = new Text(m.getSender() + ":\n");
+//                        senderNode.setStyle("-fx-font-weight: bold; -fx-fill: black;");
+//                        VBox wrapper = new VBox();
+//                        wrapper.getChildren().addAll(senderNode, v);
+//                        box.getChildren().add(wrapper);
+//                    } else {
+//                        box.getChildren().add(v);
+//                    }
+//                } catch (Exception e) {
+//                    // Fallback for invalid image data
+//                    String fallback = isGroup && !isSent ? m.getSender() + ": [Invalid image]" : "[Invalid image]";
+//                    Text textNode = new Text(fallback);
+//                    Text timestampNode = new Text("[" + m.getTimestamp().format(TIMESTAMP_FORMATTER) + "] ");
+//                    timestampNode.setStyle("-fx-font-size: 10px; -fx-fill: gray;");
+//                    TextFlow flow = new TextFlow(timestampNode, textNode);
+//                    flow.setStyle("-fx-background-color: " + (isSent ? "#DCF8C6" : "#FFFFFF") +
+//                            "; -fx-padding: 8px; -fx-background-radius: 10px;");
+//                    box.getChildren().add(flow);
+//                }
+//            } else {
+//                // Malformed image message: treat remainder as text
+//                String remainder = payload;
+//                String displayText = isGroup && !isSent ? m.getSender() + ": " + remainder : remainder;
+//                Text textNode = new Text(displayText);
+//                Text timestampNode = new Text("[" + m.getTimestamp().format(TIMESTAMP_FORMATTER) + "] ");
+//                timestampNode.setStyle("-fx-font-size: 10px; -fx-fill: gray;");
+//                TextFlow flow = new TextFlow(timestampNode, textNode);
+//                flow.setStyle("-fx-background-color: " + (isSent ? "#DCF8C6" : "#FFFFFF") +
+//                        "; -fx-padding: 8px; -fx-background-radius: 10px;");
+//                box.getChildren().add(flow);
+//            }
+//        } else {
+//            // Standard text message
+//            String displayText = text == null ? "" : (isGroup && !isSent ? m.getSender() + ": " + text : text);
+//            Text textNode = new Text(displayText);
+//            Text timestampNode = new Text("[" + m.getTimestamp().format(TIMESTAMP_FORMATTER) + "] ");
+//            timestampNode.setStyle("-fx-font-size: 10px; -fx-fill: gray;");
+//            TextFlow flow = new TextFlow(timestampNode, textNode);
+//            flow.setStyle("-fx-background-color: " + (isSent ? "#DCF8C6" : "#FFFFFF") +
+//                    "; -fx-padding: 8px; -fx-background-radius: 10px;");
+//            box.getChildren().add(flow);
+//        }
+//        return box;
+//    }
     private HBox makeBubble(Message m) {
         boolean isSent = m.getSender().equals(currentUser.getUsername());
         boolean isGroup = groups.contains(m.getReceiver());
         HBox box = new HBox();
+
         box.setAlignment(isSent ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
         box.setPadding(new Insets(4, 8, 4, 8));
+
         String text = m.getText();
         if (text != null && text.startsWith("IMG:")) {
-            // Parse out the base64 encoded image
+            // Image message parsing
             String payload = text.substring(4);
             int idx = payload.indexOf(":");
             if (idx > 0) {
@@ -410,19 +485,39 @@ public class ChatBoxController implements Initializable,
                     iv.setPreserveRatio(true);
                     Text timestampNode = new Text("[" + m.getTimestamp().format(TIMESTAMP_FORMATTER) + "] ");
                     timestampNode.setStyle("-fx-font-size: 10px; -fx-fill: gray;");
-                    VBox v = new VBox();
+                    VBox v = new VBox(iv, timestampNode);
                     v.setSpacing(2);
                     v.setAlignment(isSent ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
-                    v.getChildren().add(iv);
-                    v.getChildren().add(timestampNode);
                     v.setStyle("-fx-background-color: " + (isSent ? "#DCF8C6" : "#FFFFFF") +
                             "; -fx-padding: 8px; -fx-background-radius: 10px;");
-                    if (isGroup && !isSent) {
-                        Text senderNode = new Text(m.getSender() + ":\n");
-                        senderNode.setStyle("-fx-font-weight: bold; -fx-fill: black;");
+
+                    // ✅ NEW: Create profile pic (for all incoming messages)
+                    if (!isSent) {
+                        File profileFile = new File("users/" + m.getSender() + "/profile.jpg");
+                        Image profileImage = profileFile.exists()
+                                ? new Image(profileFile.toURI().toString())
+                                : new Image(getClass().getResource("/images/default.jpeg").toString());
+
+                        ImageView profilePic = new ImageView(profileImage);
+                        profilePic.setFitWidth(30);
+                        profilePic.setFitHeight(30);
+                        Circle clip = new Circle(15, 15, 15);
+                        profilePic.setClip(clip);
+
                         VBox wrapper = new VBox();
-                        wrapper.getChildren().addAll(senderNode, v);
-                        box.getChildren().add(wrapper);
+                        wrapper.setSpacing(4);
+
+                        // ✅ NEW: Sender label only in group
+                        if (isGroup) {
+                            Label senderLabel = new Label(m.getSender());
+                            senderLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: white; -fx-font-size: 12;");
+                            wrapper.getChildren().add(senderLabel);
+                        }
+
+                        wrapper.getChildren().add(v);
+                        HBox messageWithPic = new HBox(8, profilePic, wrapper);
+                        messageWithPic.setAlignment(Pos.CENTER_LEFT);
+                        box.getChildren().add(messageWithPic);
                     } else {
                         box.getChildren().add(v);
                     }
@@ -438,7 +533,7 @@ public class ChatBoxController implements Initializable,
                     box.getChildren().add(flow);
                 }
             } else {
-                // Malformed image message: treat remainder as text
+                // Malformed image
                 String remainder = payload;
                 String displayText = isGroup && !isSent ? m.getSender() + ": " + remainder : remainder;
                 Text textNode = new Text(displayText);
@@ -451,14 +546,43 @@ public class ChatBoxController implements Initializable,
             }
         } else {
             // Standard text message
-            String displayText = text == null ? "" : (isGroup && !isSent ? m.getSender() + ": " + text : text);
-            Text textNode = new Text(displayText);
+            Text textNode = new Text(text == null ? "" : text);
             Text timestampNode = new Text("[" + m.getTimestamp().format(TIMESTAMP_FORMATTER) + "] ");
             timestampNode.setStyle("-fx-font-size: 10px; -fx-fill: gray;");
             TextFlow flow = new TextFlow(timestampNode, textNode);
             flow.setStyle("-fx-background-color: " + (isSent ? "#DCF8C6" : "#FFFFFF") +
                     "; -fx-padding: 8px; -fx-background-radius: 10px;");
-            box.getChildren().add(flow);
+
+            // ✅ NEW: if incoming message
+            if (!isSent) {
+                File profileFile = new File("users/" + m.getSender() + "/profile.jpg");
+                Image profileImage = profileFile.exists()
+                        ? new Image(profileFile.toURI().toString())
+                        : new Image(getClass().getResource("/images/default.jpeg").toString());
+
+                ImageView profilePic = new ImageView(profileImage);
+                profilePic.setFitWidth(30);
+                profilePic.setFitHeight(30);
+                Circle clip = new Circle(15, 15, 15);
+                profilePic.setClip(clip);
+
+                VBox wrapper = new VBox();
+                wrapper.setSpacing(4);
+
+                // ✅ NEW: add sender label only if group
+                if (isGroup) {
+                    Label senderLabel = new Label(m.getSender());
+                    senderLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: white; -fx-font-size: 12;");
+                    wrapper.getChildren().add(senderLabel);
+                }
+
+                wrapper.getChildren().add(flow);
+                HBox messageWithPic = new HBox(8, profilePic, wrapper);
+                messageWithPic.setAlignment(Pos.CENTER_LEFT);
+                box.getChildren().add(messageWithPic);
+            } else {
+                box.getChildren().add(flow);
+            }
         }
         return box;
     }
