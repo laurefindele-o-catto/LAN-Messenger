@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.shape.Circle?>
+
+<!--
+    Simple loading‑screen layout that mirrors the Tailwind / HTML version.
+    Background uses a dark gradient; the spinner and controls are centred.
+-->
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="main.java.controller.LoadingController"
+      alignment="CENTER"
+      spacing="24"
+      style="-fx-background-color: linear-gradient(to bottom right,#1e293b,#0f172a);
+             -fx-padding:40;">
+    <!-- Spinner -->
+    <Circle fx:id="spinner"/>
+
+    <!-- Loading text -->
+    <Label fx:id="loadingText"
+           text="Loading…"
+           textFill="white"
+           style="-fx-font-size: 1.3em; -fx-font-weight: bold;"/>
+
+    <!-- Control buttons -->
+    <HBox alignment="CENTER" spacing="12">
+        <Button text="Faster"
+                style="-fx-background-color:#22c55e; -fx-text-fill:white;"
+                onAction="#changeSpeedFaster"/>
+        <Button text="Normal"
+                style="-fx-background-color:#eab308; -fx-text-fill:white;"
+                onAction="#changeSpeedNormal"/>
+        <Button text="Slower"
+                style="-fx-background-color:#3b82f6; -fx-text-fill:white;"
+                onAction="#changeSpeedSlower"/>
+        <Button text="Change Color"
+                style="-fx-background-color:#a855f7; -fx-text-fill:white;"
+                onAction="#changeColor"/>
+        <Button text="Change Size"
+                style="-fx-background-color:#ef4444; -fx-text-fill:white;"
+                onAction="#changeSize"/>
+    </HBox>
+</VBox>
