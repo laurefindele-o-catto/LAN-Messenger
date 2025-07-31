@@ -228,7 +228,8 @@ public class FriendRequestsController implements UserInterface, ClientConnection
             System.out.println("Adding friend request card for " + requester);
 
             HBox card = new HBox(10);
-            card.setStyle("-fx-background-color: white; -fx-padding: 10; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 2);");
+            //card.setStyle("-fx-background-color: white; -fx-padding: 10; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 2);");
+            card.setStyle("-fx-background-color: #abafaf; -fx-padding: 10; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 2);");
             card.setPrefWidth(500);
             card.setAlignment(Pos.CENTER_LEFT);
 
@@ -245,13 +246,15 @@ public class FriendRequestsController implements UserInterface, ClientConnection
             imageView.setClip(new Circle(20, 20, 20));
 
             Label name = new Label(sender.getUsername());
-            name.setStyle("-fx-font-size: 16px; -fx-text-fill: #444;");
+            //name.setStyle("-fx-font-size: 16px; -fx-text-fill: #444;");
+            name.setStyle("-fx-font-size: 16px; -fx-text-fill: rgba(44,41,41,0.73);");
             HBox.setHgrow(name, Priority.ALWAYS);
 
             // Create Accept button. When clicked, send the accept request and
             // remove the card immediately so the UI updates without refreshing.
             Button accept = new Button("Accept");
-            accept.setStyle("-fx-background-color: skyblue; -fx-text-fill: white; -fx-background-radius: 5;");
+            //accept.setStyle("-fx-background-color: skyblue; -fx-text-fill: white; -fx-background-radius: 5;");
+            accept.setStyle("-fx-background-color: #4fa5ef; -fx-text-fill: white; -fx-background-radius: 5;");
             accept.setOnAction(e -> {
                 System.out.println("Accepting friend request from " + sender.getUsername());
                 ClientConnection.getInstance().acceptRequest(sender.getUsername());
@@ -263,7 +266,8 @@ public class FriendRequestsController implements UserInterface, ClientConnection
             // Create Decline button. When clicked, send the decline request and
             // remove the card immediately so the UI updates without refreshing.
             Button decline = new Button("Decline");
-            decline.setStyle("-fx-background-color: pink; -fx-text-fill: white; -fx-background-radius: 5;");
+            //decline.setStyle("-fx-background-color: pink; -fx-text-fill: white; -fx-background-radius: 5;");
+            decline.setStyle("-fx-background-color: #ed2044; -fx-text-fill: white; -fx-background-radius: 5;");
             decline.setOnAction(e -> {
                 System.out.println("Declining friend request from " + sender.getUsername());
                 ClientConnection.getInstance().declineRequest(sender.getUsername());
@@ -272,10 +276,10 @@ public class FriendRequestsController implements UserInterface, ClientConnection
                 requestsBox.getChildren().remove(card);
             });
 
-            accept.setOnMouseEntered(e -> accept.setStyle("-fx-background-color: azure; -fx-text-fill: white; -fx-background-radius: 5;"));
-            accept.setOnMouseExited(e -> accept.setStyle("-fx-background-color: skyblue; -fx-text-fill: white; -fx-background-radius: 5;"));
-            decline.setOnMouseEntered(e -> decline.setStyle("-fx-background-color: pink; -fx-text-fill: white; -fx-background-radius: 5;"));
-            decline.setOnMouseExited(e -> decline.setStyle("-fx-background-color: salmon; -fx-text-fill: white; -fx-background-radius: 5;"));
+            accept.setOnMouseEntered(e -> accept.setStyle("-fx-background-color: skyblue; -fx-text-fill: white; -fx-background-radius: 5; -fx-padding: 8; -fx-font-size: 12; -fx-font-weight: bold;"));
+            accept.setOnMouseExited(e -> accept.setStyle("-fx-background-color: #4fa5ef; -fx-text-fill: white; -fx-background-radius: 5;"));
+            decline.setOnMouseEntered(e -> decline.setStyle("-fx-background-color: salmon; -fx-text-fill: white; -fx-background-radius: 5; -fx-padding: 8; -fx-font-size: 12; -fx-font-weight: bold;"));
+            decline.setOnMouseExited(e -> decline.setStyle("-fx-background-color: #ed2044; -fx-text-fill: white; -fx-background-radius: 5;"));
 
             Region spacer = new Region();
             HBox.setHgrow(spacer, Priority.ALWAYS);

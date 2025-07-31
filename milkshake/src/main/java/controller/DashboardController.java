@@ -449,10 +449,12 @@ public class DashboardController implements UserInterface {
             String uname = f.getName().replace(".ser", "");
             if (!uname.equals(user.getUsername())) {
                 Button userBtn = new Button(uname);
-                userBtn.setStyle("-fx-background-color: #1a73e8; " +
+                userBtn.setStyle("-fx-background-color: #3f689e; " +
                         "-fx-text-fill: white; " +
                         "-fx-font-weight: bold; " +
                         "-fx-background-radius: 8; " +
+                        "-fx-border-radius: 8;" +
+                        "-fx-padding: 3 6;" +
                         "-fx-cursor: hand;");
 
                 userBtn.setOnAction(e -> {

@@ -27,11 +27,7 @@
           AnchorPane.topAnchor="10.0">
         <!-- Back Button -->
         <HBox alignment="CENTER_LEFT">
-            <Button fx:id="backBtn"
-                    contentDisplay="CENTER"
-                    style="-fx-background-color: azure; -fx-text-fill: black; -fx-border-radius: 8; -fx-background-radius: 8; -fx-border-color: grey; -fx-border-width: 2;"
-                    text="← Dashboard"
-                    textFill="#ebe1e1" />
+            <Button fx:id="backBtn" contentDisplay="CENTER" style="-fx-background-color: #545c66; -fx-text-fill: white; -fx-border-radius: 10; -fx-background-radius: 10; -fx-border-color: white; -fx-border-width: 1.5; -fx-font-size: 14; -fx-padding: 7; -fx-font-weight: bold;" text="← Dashboard" textFill="#ebe1e1" />
         </HBox>
 
         <Label style="-fx-font-size: 22px;"
