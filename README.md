@@ -56,7 +56,7 @@ cd lan-messenger
 - Build and run the server
 - Build and run the client
 
-  🤝 Contributing
+🤝 Contributing
 Contributions are welcome! Please fork the repository and submit a pull request with improvements or bug fixes.
 
 📜 License
